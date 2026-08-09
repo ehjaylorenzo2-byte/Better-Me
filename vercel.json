@@ -1,12 +1,8 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
-
-  "//": "Vercel checks the filesystem BEFORE applying rewrites, so real files (assets, sw.js, icons) are served normally and only unmatched app routes fall through to index.html for React Router.",
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
-
   "headers": [
     {
       "source": "/sw.js",
