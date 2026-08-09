@@ -24,6 +24,7 @@ import { AddIncomePage } from '@/pages/finance/AddIncomePage'
 import { ExpensesPage } from '@/pages/finance/ExpensesPage'
 import { AddExpensePage } from '@/pages/finance/AddExpensePage'
 import { BudgetPage } from '@/pages/finance/BudgetPage'
+import { CategoriesPage } from '@/pages/finance/CategoriesPage'
 
 import { SavingsOverviewPage } from '@/pages/savings/SavingsOverviewPage'
 import { AddSavingsCategoryPage } from '@/pages/savings/AddSavingsCategoryPage'
@@ -96,6 +97,7 @@ function App() {
         <Route path="/finance/expenses" element={<ExpensesPage />} />
         <Route path="/finance/expense/new" element={<AddExpensePage />} />
         <Route path="/finance/budget" element={<BudgetPage />} />
+        <Route path="/finance/categories" element={<CategoriesPage />} />
 
         <Route path="/savings" element={<SavingsOverviewPage />} />
         <Route path="/savings/new" element={<AddSavingsCategoryPage />} />
