@@ -1,0 +1,115 @@
+/**
+ * Ambient background: three slow-drifting aurora blobs behind a fine grain
+ * texture. Everything is GPU-composited (transform/opacity only) and fixed
+ * behind the app, so it costs nothing per-frame on the content itself.
+ *
+ * Fully disabled under prefers-reduced-motion, and the blobs are dimmed in
+ * light mode so text contrast is never affected.
+ */
+
+.bm-ambient {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--bg-primary);
+}
+
+.bm-ambient-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.5;
+  will-change: transform;
+}
+
+.bm-ambient-blob-1 {
+  width: 62vw;
+  height: 62vw;
+  max-width: 420px;
+  max-height: 420px;
+  top: -14%;
+  left: -18%;
+  background: radial-gradient(circle at 30% 30%, #21EDA6, transparent 68%);
+  animation: bm-drift-1 26s ease-in-out infinite alternate;
+}
+
+.bm-ambient-blob-2 {
+  width: 70vw;
+  height: 70vw;
+  max-width: 460px;
+  max-height: 460px;
+  bottom: -20%;
+  right: -22%;
+  background: radial-gradient(circle at 60% 40%, #075D44, transparent 70%);
+  animation: bm-drift-2 32s ease-in-out infinite alternate;
+}
+
+.bm-ambient-blob-3 {
+  width: 46vw;
+  height: 46vw;
+  max-width: 320px;
+  max-height: 320px;
+  top: 38%;
+  right: -14%;
+  background: radial-gradient(circle at 50% 50%, #2DD4BF, transparent 72%);
+  opacity: 0.28;
+  animation: bm-drift-3 38s ease-in-out infinite alternate;
+}
+
+/* Fine grain, so the large gradients never look like flat banding. */
+.bm-ambient-grain {
+  position: absolute;
+  inset: -50%;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: bm-grain 6s steps(6) infinite;
+}
+
+@keyframes bm-drift-1 {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to   { transform: translate3d(14%, 12%, 0) scale(1.16); }
+}
+
+@keyframes bm-drift-2 {
+  from { transform: translate3d(0, 0, 0) scale(1.08); }
+  to   { transform: translate3d(-16%, -10%, 0) scale(1); }
+}
+
+@keyframes bm-drift-3 {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-12%, -18%, 0); }
+}
+
+@keyframes bm-grain {
+  0%   { transform: translate(0, 0); }
+  20%  { transform: translate(-3%, 2%); }
+  40%  { transform: translate(2%, -3%); }
+  60%  { transform: translate(-2%, -2%); }
+  80%  { transform: translate(3%, 1%); }
+  100% { transform: translate(0, 0); }
+}
+
+[data-theme='light'] .bm-ambient-blob-1 { opacity: 0.26; }
+[data-theme='light'] .bm-ambient-blob-2 { opacity: 0.2; }
+[data-theme='light'] .bm-ambient-blob-3 { opacity: 0.14; }
+[data-theme='light'] .bm-ambient-grain { opacity: 0.02; }
+
+@media (prefers-reduced-motion: reduce) {
+  .bm-ambient-blob,
+  .bm-ambient-grain {
+    animation: none !important;
+  }
+}
+
+/* Cards sit on a translucent surface so the aurora reads through them. */
+.bm-card {
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.bm-card-elevated {
+  background: color-mix(in srgb, var(--surface-elevated) 90%, transparent);
+}
