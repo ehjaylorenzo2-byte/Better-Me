@@ -85,3 +85,36 @@
   border-radius: var(--radius-sm);
   font-size: 13px;
 }
+
+.bm-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: -6px;
+}
+
+.bm-suggestions-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.bm-suggestions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bm-suggestion-chip {
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--accent);
+  background: rgba(33, 237, 166, 0.1);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+  min-height: 36px;
+}
+
+.bm-suggestion-chip:active {
+  transform: scale(0.97);
+}

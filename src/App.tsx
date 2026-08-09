@@ -39,6 +39,7 @@ import { ProfilePage } from '@/pages/profile/ProfilePage'
 import { AppearanceSettingsPage } from '@/pages/profile/AppearanceSettingsPage'
 import { NotificationSettingsPage } from '@/pages/profile/NotificationSettingsPage'
 import { SecuritySettingsPage } from '@/pages/profile/SecuritySettingsPage'
+import { AppLockSettingsPage } from '@/pages/profile/AppLockSettingsPage'
 
 function App() {
   return (
@@ -110,6 +111,7 @@ function App() {
         <Route path="/profile/appearance" element={<AppearanceSettingsPage />} />
         <Route path="/profile/notifications" element={<NotificationSettingsPage />} />
         <Route path="/profile/security" element={<SecuritySettingsPage />} />
+        <Route path="/profile/app-lock" element={<AppLockSettingsPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

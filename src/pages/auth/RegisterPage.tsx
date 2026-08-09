@@ -12,16 +12,19 @@ export function RegisterPage() {
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [suggestions, setSuggestions] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    setSuggestions([])
     setLoading(true)
     try {
       const result = await registerAccount(username, password, confirm)
       if (!result.success) {
         setError(result.error ?? 'Something went wrong.')
+        setSuggestions(result.suggestions ?? [])
         return
       }
       // Private app, no email confirmation flow: log the user straight in.
@@ -51,11 +54,35 @@ export function RegisterPage() {
           label="Choose a username"
           placeholder="Enter username"
           value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          onChange={(e) => {
+            setUsername(e.target.value)
+            if (suggestions.length) setSuggestions([])
+          }}
           autoCapitalize="none"
           autoCorrect="off"
           required
         />
+        {suggestions.length > 0 ? (
+          <div className="bm-suggestions">
+            <p className="bm-suggestions-label">These are free. Tap one to use it:</p>
+            <div className="bm-suggestions-row">
+              {suggestions.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className="bm-suggestion-chip"
+                  onClick={() => {
+                    setUsername(s)
+                    setSuggestions([])
+                    setError(null)
+                  }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
         <PasswordInput
           label="Password"
           placeholder="Enter password"

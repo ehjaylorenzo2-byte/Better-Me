@@ -37,6 +37,12 @@ export function ProfilePage() {
           <ChevronIcon />
         </button>
       </Card>
+      <Card style={{ marginBottom: 12 }}>
+        <button className="bm-profile-row" onClick={() => navigate('/profile/app-lock')}>
+          <span>App Lock (PIN / Face ID)</span>
+          <ChevronIcon />
+        </button>
+      </Card>
       <Card style={{ marginBottom: 20 }}>
         <button className="bm-profile-row" onClick={() => navigate('/profile/security')}>
           <span>Security / Account</span>
