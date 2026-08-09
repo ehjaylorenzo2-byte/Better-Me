@@ -1,26 +1,53 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/AuthContext'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { CurrencyInput, Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { LoadingState } from '@/components/ui/States'
 import { useToast } from '@/components/ui/Toast'
-import { DEFAULT_EXPENSE_CATEGORIES, addExpense } from '@/services/finance'
+import { addExpense } from '@/services/finance'
+import { ensureDefaultCategories, listCategories, type FinanceCategory } from '@/services/categories'
 import { getPhilippineToday } from '@/utils/timezone'
 import { isValidMoneyInput, pesoToCentavos } from '@/utils/money'
+import { CategoryPicker } from './CategoryPicker'
 import './finance.css'
 
 export function AddExpensePage() {
   const { userId } = useAuth()
   const navigate = useNavigate()
   const { show } = useToast()
+
+  const [categories, setCategories] = useState<FinanceCategory[]>([])
+  const [loading, setLoading] = useState(true)
   const [amount, setAmount] = useState('')
-  const [category, setCategory] = useState(DEFAULT_EXPENSE_CATEGORIES[0])
-  const [customCategory, setCustomCategory] = useState('')
+  const [category, setCategory] = useState('')
   const [date, setDate] = useState(getPhilippineToday())
   const [description, setDescription] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (!userId) return
+    let active = true
+    ;(async () => {
+      try {
+        await ensureDefaultCategories()
+        const all = await listCategories(userId)
+        if (!active) return
+        const expense = all.filter((c) => c.kind === 'expense')
+        setCategories(expense)
+        setCategory((current) => current || expense[0]?.name || '')
+      } catch {
+        if (active) setError('Could not load your categories.')
+      } finally {
+        if (active) setLoading(false)
+      }
+    })()
+    return () => {
+      active = false
+    }
+  }, [userId])
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -29,16 +56,14 @@ export function AddExpensePage() {
       setError('Enter a valid amount greater than zero.')
       return
     }
+    if (!category) {
+      setError('Choose a category.')
+      return
+    }
     setSaving(true)
     setError(null)
     try {
-      await addExpense(
-        userId,
-        pesoToCentavos(amount),
-        category === 'Other' && customCategory ? customCategory : category,
-        date,
-        description || null,
-      )
+      await addExpense(userId, pesoToCentavos(amount), category, date, description || null)
       show('Expense added.', 'success')
       navigate('/finance/expenses')
     } catch (err) {
@@ -48,32 +73,22 @@ export function AddExpensePage() {
     }
   }
 
+  if (loading) return <LoadingState />
+
   return (
     <div>
       <PageHeader title="Add Expense" />
       <form className="bm-form" onSubmit={onSubmit}>
         {error ? <div className="bm-auth-error">{error}</div> : null}
-        <CurrencyInput label="Amount" value={amount} onChange={setAmount} />
-        <div className="bm-field">
-          <span className="bm-label">Category</span>
-          <div className="bm-category-select">
-            {DEFAULT_EXPENSE_CATEGORIES.map((c) => (
-              <button
-                type="button"
-                key={c}
-                className={`bm-category-pill ${category === c ? 'active' : ''}`}
-                onClick={() => setCategory(c)}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
-          {category === 'Other' ? (
-            <Input placeholder="Custom category" value={customCategory} onChange={(e) => setCustomCategory(e.target.value)} />
-          ) : null}
-        </div>
+        <CurrencyInput label="Amount" value={amount} onChange={setAmount} autoFocus />
+        <CategoryPicker categories={categories} value={category} onChange={setCategory} label="Category" />
         <Input label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        <Input label="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} />
+        <Input
+          label="Description (optional)"
+          placeholder="What was it for?"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
         <Button type="submit" fullWidth loading={saving}>
           Add Expense
         </Button>

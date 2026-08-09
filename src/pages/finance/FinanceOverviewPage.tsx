@@ -4,12 +4,10 @@ import { useAuth } from '@/features/auth/AuthContext'
 import { Card } from '@/components/ui/Card'
 import { ProgressBar } from '@/components/ui/Progress'
 import { LoadingState, ErrorState } from '@/components/ui/States'
-import {
-  DEFAULT_EXPENSE_CATEGORIES,
-  getBudgetForMonth,
-  listExpensesForMonth,
-  listIncomeForMonth,
-} from '@/services/finance'
+import { getBudgetForMonth, listExpensesForMonth, listIncomeForMonth } from '@/services/finance'
+import { ensureDefaultCategories, listCategories, buildCategoryLookup, type FinanceCategory } from '@/services/categories'
+import { CategoryIcon } from '@/components/CategoryIcon'
+import { colorForLabel, getCategoryColor } from '@/theme/categoryStyles'
 import { listSavingsCategories } from '@/services/savings'
 import { listDebts } from '@/services/debt'
 import { getCurrentPhilippineMonth } from '@/utils/timezone'
@@ -29,19 +27,23 @@ export function FinanceOverviewPage() {
   const [budgetAmount, setBudgetAmount] = useState<number | null>(null)
   const [totalSavings, setTotalSavings] = useState(0)
   const [totalDebt, setTotalDebt] = useState(0)
+  const [categories, setCategories] = useState<FinanceCategory[]>([])
 
   const load = async () => {
     if (!userId) return
     setLoading(true)
     setError(null)
     try {
-      const [inc, exp, budget, savingsCats, debts] = await Promise.all([
+      await ensureDefaultCategories()
+      const [inc, exp, budget, savingsCats, debts, cats] = await Promise.all([
         listIncomeForMonth(userId, month),
         listExpensesForMonth(userId, month),
         getBudgetForMonth(userId, month),
         listSavingsCategories(userId),
         listDebts(userId),
+        listCategories(userId, { includeArchived: true }),
       ])
+      setCategories(cats)
       setIncome(inc)
       setExpenses(exp)
       setBudgetAmount(budget?.amount ?? null)
@@ -70,6 +72,8 @@ export function FinanceOverviewPage() {
     for (const e of expenses) map.set(e.category, (map.get(e.category) ?? 0) + e.amount)
     return [...map.entries()].sort((a, b) => b[1] - a[1])
   }, [expenses])
+
+  const lookup = useMemo(() => buildCategoryLookup(categories), [categories])
 
   const motivation = budgetSummary
     ? getFinanceMotivationMessage(budgetSummary.isOverBudget, budgetSummary.overBy / Math.max(1, budgetAmount ?? 1))
@@ -143,25 +147,50 @@ export function FinanceOverviewPage() {
         <Link to="/debt" className="bm-finance-tile">
           Debt
         </Link>
+        <Link to="/finance/categories" className="bm-finance-tile">
+          Categories
+        </Link>
       </div>
 
       <Card>
         <div className="bm-section-title-row">
-          <h3 style={{ fontSize: 14 }}>Categories</h3>
-          <Link to="/finance/expenses" className="bm-link">
-            See All
+          <h3 style={{ fontSize: 14 }}>Where it went</h3>
+          <Link to="/finance/categories" className="bm-link">
+            Manage
           </Link>
         </div>
         {byCategory.length === 0 ? (
           <p className="bm-summary-label">No expenses logged yet this month.</p>
         ) : (
-          <div className="bm-category-grid">
-            {byCategory.slice(0, 6).map(([cat, amount]) => (
-              <div key={cat} className="bm-category-chip">
-                <span>{cat}</span>
-                <strong>{formatCurrency(amount)}</strong>
-              </div>
-            ))}
+          <div className="bm-breakdown">
+            {byCategory.slice(0, 7).map(([name, amount], index) => {
+              const match = lookup.get(name.toLowerCase())
+              const swatch = match ? getCategoryColor(match.color) : colorForLabel(name)
+              const share = totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0
+              return (
+                <div key={name} className="bm-breakdown-row">
+                  <span className="bm-tx-chip" style={{ background: swatch.tint, color: swatch.accent }}>
+                    <CategoryIcon name={match?.icon ?? 'circle'} size={18} />
+                  </span>
+                  <div className="bm-breakdown-text">
+                    <div className="bm-breakdown-name">
+                      <span>{name}</span>
+                      <span style={{ color: swatch.accent }}>{formatCurrency(amount)}</span>
+                    </div>
+                    <div className="bm-breakdown-track">
+                      <div
+                        className="bm-breakdown-fill"
+                        style={{
+                          width: `${share}%`,
+                          background: swatch.accent,
+                          animationDelay: `${index * 70}ms`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )}
       </Card>
@@ -177,9 +206,6 @@ export function FinanceOverviewPage() {
         </Card>
       </div>
 
-      <p style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 4 }}>
-        Default categories: {DEFAULT_EXPENSE_CATEGORIES.join(', ')}. Custom categories are supported when logging expenses.
-      </p>
     </div>
   )
 }
