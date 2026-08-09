@@ -9,6 +9,8 @@ function mapDebt(row: {
   original_amount_centavos: number
   balance_centavos: number
   paid_off: boolean
+  color?: string
+  icon?: string
   created_at: string
 }): Debt {
   return {
@@ -18,6 +20,8 @@ function mapDebt(row: {
     originalAmount: row.original_amount_centavos,
     balance: row.balance_centavos,
     paidOff: row.paid_off,
+    color: row.color ?? 'rose',
+    icon: row.icon ?? 'credit-card',
     createdAt: row.created_at,
   }
 }
@@ -50,7 +54,13 @@ export async function listDebts(userId: string): Promise<Debt[]> {
   return (data ?? []).map(mapDebt)
 }
 
-export async function createDebt(userId: string, name: string, originalAmount: Centavos): Promise<Debt> {
+export async function createDebt(
+  userId: string,
+  name: string,
+  originalAmount: Centavos,
+  color = 'rose',
+  icon = 'credit-card',
+): Promise<Debt> {
   if (!name.trim()) throw new Error('Debt name is required.')
   if (originalAmount < 0) throw new Error('Amount cannot be negative.')
   const { data, error } = await supabase
@@ -60,11 +70,35 @@ export async function createDebt(userId: string, name: string, originalAmount: C
       name: name.trim(),
       original_amount_centavos: originalAmount,
       balance_centavos: originalAmount,
+      color,
+      icon,
     })
     .select('*')
     .single()
   if (error) throw error
   return mapDebt(data)
+}
+
+export async function updateDebt(
+  debtId: string,
+  updates: { name?: string; color?: string; icon?: string },
+): Promise<void> {
+  const payload: { name?: string; color?: string; icon?: string } = {}
+  if (updates.name !== undefined) {
+    if (!updates.name.trim()) throw new Error('Debt name is required.')
+    payload.name = updates.name.trim()
+  }
+  if (updates.color !== undefined) payload.color = updates.color
+  if (updates.icon !== undefined) payload.icon = updates.icon
+
+  const { error } = await supabase.from('debts').update(payload).eq('id', debtId)
+  if (error) throw error
+}
+
+/** Deletes the debt and, by cascade, its payment history. Irreversible. */
+export async function deleteDebt(debtId: string): Promise<void> {
+  const { error } = await supabase.from('debts').delete().eq('id', debtId)
+  if (error) throw error
 }
 
 export async function listPaymentsForDebt(debtId: string): Promise<DebtPayment[]> {

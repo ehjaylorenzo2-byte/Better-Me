@@ -8,6 +8,8 @@ function mapCategory(row: {
   name: string
   goal_amount_centavos: number | null
   balance_centavos: number
+  color?: string
+  icon?: string
   created_at: string
 }): SavingsCategory {
   return {
@@ -16,6 +18,8 @@ function mapCategory(row: {
     name: row.name,
     goalAmount: row.goal_amount_centavos,
     balance: row.balance_centavos,
+    color: row.color ?? 'mint',
+    icon: row.icon ?? 'piggy-bank',
     createdAt: row.created_at,
   }
 }
@@ -54,6 +58,8 @@ export async function createSavingsCategory(
   userId: string,
   name: string,
   goalAmount?: Centavos | null,
+  color = 'mint',
+  icon = 'piggy-bank',
 ): Promise<SavingsCategory> {
   if (!name.trim()) throw new Error('Category name is required.')
   if (goalAmount !== undefined && goalAmount !== null && goalAmount <= 0) {
@@ -61,11 +67,45 @@ export async function createSavingsCategory(
   }
   const { data, error } = await supabase
     .from('savings_categories')
-    .insert({ user_id: userId, name: name.trim(), goal_amount_centavos: goalAmount ?? null })
+    .insert({
+      user_id: userId,
+      name: name.trim(),
+      goal_amount_centavos: goalAmount ?? null,
+      color,
+      icon,
+    })
     .select('*')
     .single()
   if (error) throw error
   return mapCategory(data)
+}
+
+export async function updateSavingsCategory(
+  categoryId: string,
+  updates: { name?: string; goalAmount?: Centavos | null; color?: string; icon?: string },
+): Promise<void> {
+  const payload: { name?: string; goal_amount_centavos?: number | null; color?: string; icon?: string } = {}
+  if (updates.name !== undefined) {
+    if (!updates.name.trim()) throw new Error('Category name is required.')
+    payload.name = updates.name.trim()
+  }
+  if (updates.goalAmount !== undefined) {
+    if (updates.goalAmount !== null && updates.goalAmount <= 0) {
+      throw new Error('Goal amount must be greater than zero.')
+    }
+    payload.goal_amount_centavos = updates.goalAmount
+  }
+  if (updates.color !== undefined) payload.color = updates.color
+  if (updates.icon !== undefined) payload.icon = updates.icon
+
+  const { error } = await supabase.from('savings_categories').update(payload).eq('id', categoryId)
+  if (error) throw error
+}
+
+/** Deletes the category and, by cascade, its transaction history. Irreversible. */
+export async function deleteSavingsCategory(categoryId: string): Promise<void> {
+  const { error } = await supabase.from('savings_categories').delete().eq('id', categoryId)
+  if (error) throw error
 }
 
 export async function listTransactionsForCategory(categoryId: string): Promise<SavingsTransaction[]> {
