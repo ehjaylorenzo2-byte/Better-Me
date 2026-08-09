@@ -1,0 +1,12 @@
+.bm-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  box-shadow: var(--shadow-soft);
+}
+
+.bm-card-elevated {
+  background: var(--surface-elevated);
+  border-color: var(--border-strong);
+}

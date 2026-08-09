@@ -1,0 +1,132 @@
+.bm-home {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.bm-home-header p {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.bm-home-header h1 {
+  font-size: 28px;
+  margin: 2px 0 8px;
+}
+
+.bm-home-sub {
+  color: var(--text-secondary) !important;
+}
+
+.bm-home-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.bm-home-progress-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  flex: 1;
+}
+
+.bm-stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.bm-stat-value {
+  font-family: var(--font-bold);
+  font-size: 20px;
+  color: var(--text-primary);
+}
+
+.bm-stat-success {
+  color: var(--success);
+}
+.bm-stat-warning {
+  color: var(--warning);
+}
+.bm-stat-danger {
+  color: var(--danger);
+}
+
+.bm-stat-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.bm-home-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.bm-summary-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.bm-summary-value {
+  font-family: var(--font-bold);
+  font-size: 16px;
+}
+
+.bm-summary-value-sm {
+  font-size: 13px;
+}
+
+.bm-section-title,
+.bm-section-title-row h2 {
+  font-size: 15px;
+  margin-bottom: 12px;
+}
+
+.bm-section-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+
+.bm-section-title-row span {
+  font-family: var(--font-bold);
+  color: var(--accent);
+}
+
+.bm-schedule-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bm-schedule-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bm-schedule-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.bm-schedule-time {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.bm-home-cta {
+  text-align: center;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-strong);
+  color: var(--accent);
+  font-weight: 700;
+}

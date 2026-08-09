@@ -1,0 +1,70 @@
+.bm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bm-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.bm-input {
+  width: 100%;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  font-size: 16px;
+  color: var(--text-primary);
+  min-height: 48px;
+  transition: border-color 150ms ease;
+}
+
+.bm-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.bm-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.bm-input-error {
+  border-color: var(--danger);
+}
+
+.bm-field-error {
+  font-size: 13px;
+  color: var(--danger);
+  margin: 0;
+}
+
+.bm-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.bm-input-toggle {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px;
+}
+
+.bm-currency-prefix {
+  position: absolute;
+  left: 16px;
+  color: var(--text-secondary);
+  font-family: var(--font-bold);
+}
+
+.bm-input-currency {
+  padding-left: 32px;
+}

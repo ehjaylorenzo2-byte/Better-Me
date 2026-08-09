@@ -1,0 +1,65 @@
+.bm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-bold);
+  font-size: 15px;
+  font-weight: 700;
+  padding: 14px 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  transition: transform 120ms ease, opacity 120ms ease, background 180ms ease;
+  min-height: 48px;
+}
+
+.bm-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.bm-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.bm-btn-full {
+  width: 100%;
+}
+
+.bm-btn-primary {
+  background: var(--gradient-accent);
+  color: var(--accent-contrast);
+  box-shadow: var(--shadow-soft);
+}
+
+.bm-btn-secondary {
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.bm-btn-ghost {
+  background: transparent;
+  color: var(--accent);
+}
+
+.bm-btn-danger {
+  background: transparent;
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.bm-btn-spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  animation: bm-spin 700ms linear infinite;
+}
+
+@keyframes bm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

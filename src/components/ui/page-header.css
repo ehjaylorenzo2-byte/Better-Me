@@ -1,0 +1,28 @@
+.bm-page-header {
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.bm-page-header h1 {
+  font-size: 19px;
+  text-align: center;
+}
+
+.bm-back-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+}
+
+.bm-page-header-action {
+  display: flex;
+  justify-content: flex-end;
+}

@@ -1,0 +1,19 @@
+.bm-debt-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bm-debt-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bm-debt-balance {
+  font-family: var(--font-bold);
+  font-size: 22px;
+}

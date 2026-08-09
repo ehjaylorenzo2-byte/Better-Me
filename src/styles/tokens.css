@@ -1,0 +1,69 @@
+/* Better Me design tokens. Do not hardcode colors elsewhere; reference these. */
+
+:root {
+  --font-regular: 'Google Sans Regular', 'Product Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-bold: 'Google Sans Bold', 'Product Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-pill: 999px;
+
+  --shadow-soft: 0 8px 24px rgba(2, 29, 24, 0.28);
+  --shadow-elevated: 0 12px 36px rgba(2, 29, 24, 0.38);
+
+  --brand-deep-forest: #021D18;
+  --brand-dark-emerald: #0C3F30;
+  --brand-emerald: #075D44;
+  --brand-mint: #21EDA6;
+
+  --success: #21EDA6;
+  --warning: #F5B841;
+  --danger: #F2545B;
+
+  --gradient-brand: linear-gradient(160deg, var(--brand-deep-forest) 0%, var(--brand-dark-emerald) 55%, var(--brand-emerald) 100%);
+  --gradient-accent: linear-gradient(135deg, var(--brand-emerald) 0%, var(--brand-mint) 100%);
+
+  --nav-height: 76px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+}
+
+/* Dark theme (default) */
+:root,
+[data-theme='dark'] {
+  --bg-primary: #021D18;
+  --bg-secondary: #052620;
+  --surface: #0A332A;
+  --surface-elevated: #0F3E33;
+  --text-primary: #EAF7F2;
+  --text-secondary: #9BC4B8;
+  --text-tertiary: #6B9384;
+  --accent: #21EDA6;
+  --accent-contrast: #021D18;
+  --success: #21EDA6;
+  --warning: #F5B841;
+  --danger: #FF6B72;
+  --border: rgba(146, 210, 190, 0.14);
+  --border-strong: rgba(146, 210, 190, 0.26);
+  --overlay: rgba(2, 12, 10, 0.6);
+}
+
+/* Light theme */
+[data-theme='light'] {
+  --bg-primary: #F5FBF8;
+  --bg-secondary: #EDF7F2;
+  --surface: #FFFFFF;
+  --surface-elevated: #FFFFFF;
+  --text-primary: #06231C;
+  --text-secondary: #3E6459;
+  --text-tertiary: #6D8A80;
+  --accent: #0B8A63;
+  --accent-contrast: #FFFFFF;
+  --success: #0B8A63;
+  --warning: #B4740E;
+  --danger: #C7383F;
+  --border: rgba(7, 93, 68, 0.14);
+  --border-strong: rgba(7, 93, 68, 0.24);
+  --overlay: rgba(6, 35, 28, 0.35);
+}
