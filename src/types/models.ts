@@ -110,6 +110,8 @@ export interface SavingsCategory {
   name: string
   goalAmount: Centavos | null
   balance: Centavos
+  color: string
+  icon: string
   createdAt: string
 }
 
@@ -130,6 +132,8 @@ export interface Debt {
   originalAmount: Centavos
   balance: Centavos
   paidOff: boolean
+  color: string
+  icon: string
   createdAt: string
 }
 
