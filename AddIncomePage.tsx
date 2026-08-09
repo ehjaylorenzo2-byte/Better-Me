@@ -1,0 +1,120 @@
+.bm-splash {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: calc(48px + var(--safe-top)) 24px calc(32px + var(--safe-bottom));
+  background: var(--gradient-brand);
+}
+
+.bm-splash-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  text-align: center;
+}
+
+.bm-splash-tagline {
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.bm-splash-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bm-auth-page {
+  min-height: 100vh;
+  padding: calc(40px + var(--safe-top)) 22px calc(32px + var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.bm-auth-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.bm-auth-header h1 {
+  font-size: 22px;
+}
+
+.bm-auth-header p {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.bm-auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.bm-auth-footer {
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.bm-auth-footer a,
+.bm-auth-footer button.bm-link {
+  color: var(--accent);
+  font-weight: 700;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.bm-auth-error {
+  background: rgba(255, 107, 114, 0.12);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+
+.bm-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: -6px;
+}
+
+.bm-suggestions-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.bm-suggestions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bm-suggestion-chip {
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--accent);
+  background: rgba(33, 237, 166, 0.1);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+  min-height: 36px;
+}
+
+.bm-suggestion-chip:active {
+  transform: scale(0.97);
+}
