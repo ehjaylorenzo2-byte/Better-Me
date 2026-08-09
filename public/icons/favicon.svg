@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="bm-grad" x1="10" y1="80" x2="90" y2="20" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0C3F30"/>
+      <stop offset="0.55" stop-color="#075D44"/>
+      <stop offset="1" stop-color="#21EDA6"/>
+    </linearGradient>
+  </defs>
+  <!-- branch -->
+  <path d="M8 78 C 30 74, 65 74, 92 62" stroke="url(#bm-grad)" stroke-width="3.2" stroke-linecap="round"/>
+  <!-- caterpillar body: resting curved segments on the branch -->
+  <path d="M20 76
+           C 20 66, 30 66, 30 76
+           C 30 66, 40 66, 40 76
+           C 40 64, 51 64, 51 76
+           C 51 64, 62 64, 62 75
+           C 62 62, 74 61, 76 71"
+        stroke="url(#bm-grad)" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- head -->
+  <circle cx="80" cy="64" r="7.5" stroke="url(#bm-grad)" stroke-width="4.2"/>
+  <!-- antenna -->
+  <path d="M83 58 C 86 52, 90 50, 93 46" stroke="url(#bm-grad)" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="94" cy="44" r="1.8" fill="#21EDA6"/>
+  <!-- eye -->
+  <circle cx="82.5" cy="62.5" r="1.4" fill="#21EDA6"/>
+  <!-- leaf on branch -->
+  <path d="M14 78 C 8 74, 6 68, 10 63 C 15 68, 16 74, 14 78 Z" stroke="url(#bm-grad)" stroke-width="2.6" stroke-linejoin="round"/>
+</svg>

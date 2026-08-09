@@ -1,0 +1,6 @@
+-- Optional local seed data. Better Me ships with zero fake data by design --
+-- the dashboard must only ever show numbers derived from real Supabase rows.
+-- This file is intentionally left empty for production use. Use it only for
+-- local development if you want to manually insert test rows tied to a real
+-- auth.users row you created via Supabase Auth (sign up in the app first,
+-- then reference that user's id here).
