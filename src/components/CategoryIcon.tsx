@@ -112,18 +112,28 @@ export const ICON_PATHS: Record<string, Shape[]> = {
   star: I(p('M12 3.5l2.6 5.6 6 .8-4.4 4.2 1.1 6-5.3-2.9-5.3 2.9 1.1-6L3.4 9.9l6-.8L12 3.5z')),
   tag: I(p('M3 11V4h7l11 11-7 7L3 11z'), c(7.5, 7.5, 1.4)),
   folder: I(p('M3 7a2 2 0 012-2h4l2 2.5h8a2 2 0 012 2V18a1 1 0 01-1 1H4a1 1 0 01-1-1V7z')),
+  cart: I(
+    p('M2.5 4h2.4l2.7 11.4h9.9'),
+    p('M6.4 7.4h14.1l-1.9 6.6H7.9'),
+    c(9.6, 19, 1.5),
+    c(17.2, 19, 1.5),
+  ),
+  'shopping-bag': I(r(4.5, 7.5, 15, 13, 2), p('M9 10V6.5a3 3 0 016 0V10'), p('M4.5 11h15')),
+  store: I(p('M3.5 9.5V20h17V9.5'), p('M2.5 9.5L4.5 4h15l2 5.5a3 3 0 01-5.6 1.6 3 3 0 01-5.8 0 3 3 0 01-5.6-1.6z'), p('M9.5 20v-5h5v5')),
+
   circle: I(c(12, 12, 8.5)),
 }
 
 export const ICON_GROUPS: Array<{ label: string; icons: string[] }> = [
-  { label: 'Food & drink', icons: ['utensils', 'coffee', 'pizza', 'burger', 'cake', 'drink', 'groceries', 'basket'] },
+  { label: 'Food & drink', icons: ['utensils', 'coffee', 'pizza', 'burger', 'cake', 'drink', 'groceries'] },
+  { label: 'Shopping', icons: ['cart', 'shopping-bag', 'basket', 'store', 'tag', 'shirt', 'shoe', 'gift'] },
   { label: 'Transport', icons: ['car', 'motorcycle', 'bus', 'train', 'plane', 'bike', 'fuel', 'parking', 'boat'] },
   { label: 'Home & bills', icons: ['home', 'bed', 'sofa', 'lightbulb', 'zap', 'droplet', 'flame', 'wifi', 'tv', 'wrench', 'trash', 'laundry'] },
-  { label: 'Health & personal', icons: ['heart-pulse', 'heart', 'pill', 'stethoscope', 'tooth', 'glasses', 'dumbbell', 'scissors', 'sparkles', 'shirt', 'shoe'] },
-  { label: 'Family & giving', icons: ['family', 'baby', 'pets', 'graduation-cap', 'book', 'church', 'charity', 'gift'] },
+  { label: 'Health & personal', icons: ['heart-pulse', 'heart', 'pill', 'stethoscope', 'tooth', 'glasses', 'dumbbell', 'scissors', 'sparkles'] },
+  { label: 'Family & giving', icons: ['family', 'baby', 'pets', 'graduation-cap', 'book', 'church', 'charity'] },
   { label: 'Money & work', icons: ['banknote', 'coins', 'wallet', 'credit-card', 'piggy-bank', 'landmark', 'trending-up', 'trending-down', 'receipt', 'calculator', 'briefcase', 'laptop', 'handshake', 'percent', 'shield', 'umbrella'] },
   { label: 'Tech & fun', icons: ['phone', 'monitor', 'gamepad', 'headphones', 'music', 'film', 'camera', 'ticket'] },
-  { label: 'Other', icons: ['repeat', 'calendar', 'clock', 'map-pin', 'package', 'truck', 'star', 'tag', 'folder', 'circle'] },
+  { label: 'Other', icons: ['repeat', 'calendar', 'clock', 'map-pin', 'package', 'truck', 'star', 'folder', 'circle'] },
 ]
 
 export const ALL_ICON_IDS = Object.keys(ICON_PATHS)

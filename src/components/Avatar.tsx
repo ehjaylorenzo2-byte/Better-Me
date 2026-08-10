@@ -1,4 +1,4 @@
-import { colorForLabel } from '@/theme/categoryStyles'
+import { chipVarsForLabel } from '@/theme/categoryStyles'
 import './avatar.css'
 
 /**
@@ -27,7 +27,6 @@ export function Avatar({
     .map((part) => part[0]?.toUpperCase() ?? '')
     .join('') || name[0]?.toUpperCase() || '?'
 
-  const swatch = colorForLabel(name)
 
   return (
     <span
@@ -38,8 +37,8 @@ export function Avatar({
         <img src={url} alt="" className="bm-avatar-img" width={size} height={size} loading="lazy" />
       ) : (
         <span
-          className="bm-avatar-initials"
-          style={{ background: swatch.tint, color: swatch.accent, fontSize: size * 0.38 }}
+          className="bm-avatar-initials bm-chip"
+          style={{ ...chipVarsForLabel(name), fontSize: size * 0.38 }}
         >
           {initials}
         </span>

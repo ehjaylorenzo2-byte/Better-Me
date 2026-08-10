@@ -21,8 +21,11 @@
 }
 
 .bm-avatar-initials {
+  /* Reuses .bm-chip for its theme-aware colour maths, then overrides the chip's
+     fixed box so the avatar stays a circle at the caller's size. */
   width: 100%;
   height: 100%;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
