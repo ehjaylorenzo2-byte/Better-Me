@@ -1,8 +1,13 @@
 /**
- * Category colour tokens. Each has a vivid accent plus a translucent tint used
- * for the icon chip background, so a list of categories reads as colourful
- * without fighting Better Me's dark forest surfaces. All accents were picked
- * to stay legible on both the dark and light themes.
+ * Category colour tokens.
+ *
+ * Each colour is stored once, as the vivid accent. The light and dark versions
+ * are derived in CSS from a single `--chip-accent` custom property rather than
+ * kept as a second hardcoded palette here, because the vivid accents were
+ * picked against dark surfaces and go weak on white. See `styles/chips.css`:
+ * light mode darkens the accent for the glyph and mixes it into white for the
+ * background, so one stored value stays legible in both themes and there is no
+ * second palette to keep in sync.
  */
 
 export interface CategoryColor {
@@ -31,6 +36,22 @@ const COLOR_BY_ID = new Map(CATEGORY_COLORS.map((c) => [c.id, c]))
 
 export function getCategoryColor(id: string | null | undefined): CategoryColor {
   return COLOR_BY_ID.get(id ?? '') ?? CATEGORY_COLORS[0]
+}
+
+/**
+ * Inline style that hands a colour to the chip CSS.
+ *
+ * Components pass the accent and nothing else. Whether that becomes a pale tint
+ * with a dark glyph or a dim tint with a bright glyph is the stylesheet's call,
+ * which is what keeps a category looking right in both themes.
+ */
+export function chipVars(color: string | null | undefined): Record<string, string> {
+  return { '--chip-accent': getCategoryColor(color).accent }
+}
+
+/** Same, for a legacy row that only has a label to go on. */
+export function chipVarsForLabel(label: string): Record<string, string> {
+  return { '--chip-accent': colorForLabel(label).accent }
 }
 
 /** Deterministic fallback colour for a label with no stored category (legacy rows). */
