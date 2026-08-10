@@ -159,6 +159,14 @@ a {
   color: var(--text-secondary);
 }
 
+/* Vertical form stack. Shared: finance and habits both use it, so it lives here
+   rather than being defined twice and quietly diverging. */
+.bm-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 /* Small screens: pull the two biggest steps in so long names still fit. */
 @media (max-width: 360px) {
   :root {
