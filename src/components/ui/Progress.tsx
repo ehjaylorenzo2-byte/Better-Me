@@ -34,31 +34,27 @@ export function ProgressRing({
     <div className="bm-ring" style={{ width: size, height: size }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
         <circle
+          className="bm-ring-track"
           cx={size / 2}
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="var(--border)"
           strokeWidth={strokeWidth}
         />
+        {/* Stroke colours live in CSS so a ring drawn on the lime hero can
+            switch to ink without this component knowing where it sits. */}
         <circle
+          className="bm-ring-value"
           cx={size / 2}
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="url(#bm-ring-grad)"
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
         />
-        <defs>
-          <linearGradient id="bm-ring-grad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="var(--brand-emerald)" />
-            <stop offset="1" stopColor="var(--brand-mint)" />
-          </linearGradient>
-        </defs>
       </svg>
       <div className="bm-ring-label">
         {showValue ? <strong>{Math.round(clamped)}%</strong> : null}

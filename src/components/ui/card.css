@@ -9,4 +9,5 @@
 .bm-card-elevated {
   background: var(--surface-elevated);
   border-color: var(--border-strong);
+  box-shadow: var(--shadow-elevated);
 }

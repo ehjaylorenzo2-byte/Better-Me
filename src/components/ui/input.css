@@ -1,24 +1,25 @@
 .bm-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
 }
 
 .bm-label {
   font-size: 13px;
   color: var(--text-secondary);
-  font-weight: 500;
+  font-family: var(--font-medium);
 }
 
 .bm-input {
   width: 100%;
-  background: var(--surface-elevated);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 14px 16px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 15px 16px;
+  /* 16px minimum, otherwise iOS Safari zooms the whole page on focus. */
   font-size: 16px;
   color: var(--text-primary);
-  min-height: 48px;
+  min-height: 52px;
   transition: border-color 150ms ease;
 }
 
@@ -28,7 +29,7 @@
 
 .bm-input:focus {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--text-primary);
 }
 
 .bm-input-error {
@@ -52,10 +53,10 @@
   right: 12px;
   background: none;
   border: none;
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 13px;
-  font-weight: 600;
-  padding: 6px;
+  font-family: var(--font-medium);
+  padding: 8px;
 }
 
 .bm-currency-prefix {
@@ -66,5 +67,7 @@
 }
 
 .bm-input-currency {
-  padding-left: 32px;
+  padding-left: 34px;
+  font-family: var(--font-medium);
+  font-size: 18px;
 }

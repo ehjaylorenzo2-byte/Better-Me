@@ -3,14 +3,13 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-family: var(--font-bold);
+  font-family: var(--font-medium);
   font-size: 15px;
-  font-weight: 700;
-  padding: 14px 20px;
-  border-radius: var(--radius-md);
+  padding: 15px 22px;
+  border-radius: var(--radius-pill);
   border: 1px solid transparent;
   transition: transform 120ms ease, opacity 120ms ease, background 180ms ease;
-  min-height: 48px;
+  min-height: 52px;
 }
 
 .bm-btn:active:not(:disabled) {
@@ -18,7 +17,7 @@
 }
 
 .bm-btn:disabled {
-  opacity: 0.55;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
@@ -26,21 +25,31 @@
   width: 100%;
 }
 
+/*
+  Near black with a white label, the way the reference does its primary action.
+  Lime is saved for the accents around it: a solid lime button with dark text
+  works, but used for every primary action it stops reading as an accent at all.
+*/
 .bm-btn-primary {
-  background: var(--gradient-accent);
-  color: var(--accent-contrast);
+  background: var(--text-primary);
+  color: var(--bg-primary);
   box-shadow: var(--shadow-soft);
 }
 
+.bm-btn-accent {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
 .bm-btn-secondary {
-  background: var(--surface-elevated);
+  background: var(--surface);
   color: var(--text-primary);
   border-color: var(--border-strong);
 }
 
 .bm-btn-ghost {
   background: transparent;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .bm-btn-danger {
