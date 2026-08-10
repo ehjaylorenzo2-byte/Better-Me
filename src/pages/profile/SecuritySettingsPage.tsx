@@ -79,10 +79,10 @@ export function SecuritySettingsPage() {
 
       {/* ---------------- Username ---------------- */}
       <Card style={{ marginBottom: 16 }}>
-        <h2 className="bm-section-title">Username</h2>
+        <h2 className="bm-section-title">Login username</h2>
         <p className="bm-settings-note">
-          You currently log in as <strong>{username ?? '...'}</strong>. Changing this changes what you type to
-          log in, on every device.
+          You log in as <strong>{username ?? '...'}</strong>. Changing this changes what you type to log in,
+          on every device. To change the name the app displays instead, use Edit Name on your profile.
         </p>
 
         <form className="bm-form" onSubmit={onChangeUsername} style={{ marginTop: 14 }}>
