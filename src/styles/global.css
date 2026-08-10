@@ -1,4 +1,6 @@
+@import './fonts.css';
 @import './tokens.css';
+@import './chips.css';
 @import './motion.css';
 
 * {
@@ -91,8 +93,76 @@ a {
 .bm-link {
   background: none;
   border: none;
-  color: var(--accent);
-  font-weight: 700;
+  /* Not --accent. Lime on white is 1.26:1 and vanishes. */
+  color: var(--accent-text);
+  font-family: var(--font-medium);
   font-size: 14px;
   padding: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   Type scale
+
+   One --bm-display per screen, and it names what the screen is about. Anything
+   that would be a second display is a title instead. This is the whole reason
+   the app reads faster than it used to: your eye always has a starting point.
+   --------------------------------------------------------------------------- */
+
+.bm-display {
+  font-family: var(--font-bold);
+  font-size: var(--fs-display);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-display);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.bm-title {
+  font-family: var(--font-bold);
+  font-size: var(--fs-title);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--tracking-title);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.bm-heading {
+  font-family: var(--font-medium);
+  font-size: var(--fs-heading);
+  line-height: var(--lh-snug);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.bm-body {
+  font-family: var(--font-regular);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--text-primary);
+}
+
+.bm-label {
+  font-family: var(--font-medium);
+  font-size: var(--fs-label);
+  line-height: 1.35;
+  color: var(--text-secondary);
+}
+
+.bm-caption {
+  font-family: var(--font-regular);
+  font-size: var(--fs-caption);
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.bm-muted {
+  color: var(--text-secondary);
+}
+
+/* Small screens: pull the two biggest steps in so long names still fit. */
+@media (max-width: 360px) {
+  :root {
+    --fs-display: 32px;
+    --fs-title: 24px;
+  }
 }

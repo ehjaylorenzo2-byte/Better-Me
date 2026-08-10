@@ -1,69 +1,143 @@
-/* Better Me design tokens. Do not hardcode colors elsewhere; reference these. */
+/*
+  Better Me design tokens. Do not hardcode colours elsewhere; reference these.
+
+  The palette is white, near black, and lime, copied from the fintech reference.
+
+  One rule matters more than the rest: LIME IS A FILL, NEVER TEXT ON WHITE.
+  #D2F34C on #FFFFFF is about 1.4:1, which disappears outdoors. So lime is the
+  button, the chip, the active nav circle, the progress bar, and the text on top
+  of it is near black at roughly 15:1. When a green *word* is needed, use
+  --accent-text, which is dark enough to pass.
+*/
 
 :root {
-  --font-regular: 'Google Sans Regular', 'Product Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-bold: 'Google Sans Bold', 'Product Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* Regular for reading, Medium for labels, Black for anything big. */
+  --font-regular: 'Creato Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-medium: 'Creato Display Medium', 'Creato Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-bold: 'Creato Display Black', 'Creato Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-  --radius-sm: 10px;
-  --radius-md: 16px;
-  --radius-lg: 22px;
+  /* Type scale. Every screen gets exactly one --fs-display. */
+  --fs-display: 40px;
+  --fs-title: 28px;
+  --fs-heading: 20px;
+  --fs-body: 15px;
+  --fs-label: 13px;
+  --fs-caption: 11.5px;
+
+  --lh-tight: 1.04;
+  --lh-snug: 1.25;
+  --lh-body: 1.55;
+
+  --tracking-display: -0.028em;
+  --tracking-title: -0.02em;
+
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+  --radius-xl: 30px;
   --radius-pill: 999px;
 
-  --shadow-soft: 0 8px 24px rgba(2, 29, 24, 0.28);
-  --shadow-elevated: 0 12px 36px rgba(2, 29, 24, 0.38);
+  /* The one brand colour, identical in both themes. */
+  --lime: #D2F34C;
+  --lime-deep: #BCDD34;
+  --ink: #101208;
 
-  --brand-deep-forest: #021D18;
-  --brand-dark-emerald: #0C3F30;
-  --brand-emerald: #075D44;
-  --brand-mint: #21EDA6;
-
-  --success: #21EDA6;
-  --warning: #F5B841;
-  --danger: #F2545B;
-
-  --gradient-brand: linear-gradient(160deg, var(--brand-deep-forest) 0%, var(--brand-dark-emerald) 55%, var(--brand-emerald) 100%);
-  --gradient-accent: linear-gradient(135deg, var(--brand-emerald) 0%, var(--brand-mint) 100%);
-
-  --nav-height: 76px;
+  --nav-height: 78px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-top: env(safe-area-inset-top, 0px);
+
+  /* Kept so older rules referencing the forest palette still resolve. */
+  --brand-deep-forest: #101208;
+  --brand-dark-emerald: #1A1D16;
+  --brand-emerald: #4C7A0B;
+  --brand-mint: #D2F34C;
 }
 
-/* Dark theme (default) */
+/* Light theme, now the default look. */
 :root,
-[data-theme='dark'] {
-  --bg-primary: #021D18;
-  --bg-secondary: #052620;
-  --surface: #0A332A;
-  --surface-elevated: #0F3E33;
-  --text-primary: #EAF7F2;
-  --text-secondary: #9BC4B8;
-  --text-tertiary: #6B9384;
-  --accent: #21EDA6;
-  --accent-contrast: #021D18;
-  --success: #21EDA6;
-  --warning: #F5B841;
-  --danger: #FF6B72;
-  --border: rgba(146, 210, 190, 0.14);
-  --border-strong: rgba(146, 210, 190, 0.26);
-  --overlay: rgba(2, 12, 10, 0.6);
-}
-
-/* Light theme */
 [data-theme='light'] {
-  --bg-primary: #F5FBF8;
-  --bg-secondary: #EDF7F2;
+  color-scheme: light;
+
+  --bg-primary: #F4F4F2;
+  --bg-secondary: #EAEAE6;
   --surface: #FFFFFF;
   --surface-elevated: #FFFFFF;
-  --text-primary: #06231C;
-  --text-secondary: #3E6459;
-  --text-tertiary: #6D8A80;
-  --accent: #0B8A63;
-  --accent-contrast: #FFFFFF;
-  --success: #0B8A63;
-  --warning: #B4740E;
-  --danger: #C7383F;
-  --border: rgba(7, 93, 68, 0.14);
-  --border-strong: rgba(7, 93, 68, 0.24);
-  --overlay: rgba(6, 35, 28, 0.35);
+  --surface-sunken: #F1F1EE;
+
+  --text-primary: #101208;
+  --text-secondary: #63675B;
+  /* Icons, chevrons and dividers only. Above the 3:1 bar for non-text, below
+     the 4.5:1 bar for body copy, so anything a person has to read uses
+     --text-secondary instead. */
+  --text-tertiary: #7C8074;
+  --text-on-accent: #101208;
+
+  --accent: #D2F34C;
+  --accent-contrast: #101208;
+  /* Lime is unreadable as text on white, so green words use this instead. */
+  --accent-text: #4C7A0B;
+  --accent-tint: #F0FBC9;
+
+  --success: #3F7A0B;
+  --warning: #9A6400;
+  --danger: #C0392F;
+  --danger-tint: #FBE9E7;
+
+  --money-in-bg: #D2F34C;
+  --money-in-text: #101208;
+  --money-out-bg: #FBE9E7;
+  --money-out-text: #C0392F;
+
+  --border: rgba(16, 18, 8, 0.09);
+  --border-strong: rgba(16, 18, 8, 0.18);
+  --overlay: rgba(16, 18, 8, 0.38);
+
+  --shadow-soft: 0 6px 20px rgba(16, 18, 8, 0.06);
+  --shadow-elevated: 0 14px 40px rgba(16, 18, 8, 0.1);
+
+  --gradient-brand: linear-gradient(160deg, #FFFFFF 0%, #F0FBC9 100%);
+  --gradient-accent: linear-gradient(135deg, #D2F34C 0%, #E4FA86 100%);
+}
+
+/* Dark theme. Same lime, near black instead of white. */
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg-primary: #0E100C;
+  --bg-secondary: #14170F;
+  --surface: #1A1D16;
+  --surface-elevated: #22261C;
+  --surface-sunken: #121409;
+
+  --text-primary: #F2F4EC;
+  --text-secondary: #9BA192;
+  /* Same role as in light: decoration, not reading. */
+  --text-tertiary: #7E8474;
+  --text-on-accent: #101208;
+
+  --accent: #D2F34C;
+  --accent-contrast: #101208;
+  /* On a dark surface lime is about 13:1, so it can be a word here. */
+  --accent-text: #D2F34C;
+  --accent-tint: rgba(210, 243, 76, 0.14);
+
+  --success: #B8E84A;
+  --warning: #F0B948;
+  --danger: #FF7A70;
+  --danger-tint: rgba(255, 122, 112, 0.14);
+
+  --money-in-bg: #D2F34C;
+  --money-in-text: #101208;
+  --money-out-bg: rgba(255, 122, 112, 0.16);
+  --money-out-text: #FF9A92;
+
+  --border: rgba(242, 244, 236, 0.1);
+  --border-strong: rgba(242, 244, 236, 0.2);
+  --overlay: rgba(4, 5, 2, 0.66);
+
+  --shadow-soft: 0 6px 20px rgba(0, 0, 0, 0.4);
+  --shadow-elevated: 0 14px 40px rgba(0, 0, 0, 0.55);
+
+  --gradient-brand: linear-gradient(160deg, #1A1D16 0%, #232A16 100%);
+  --gradient-accent: linear-gradient(135deg, #B8DC2F 0%, #D2F34C 100%);
 }
