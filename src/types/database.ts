@@ -6,9 +6,21 @@ export interface Database {
   public: {
     Tables: {
       profiles: {
-        Row: { id: string; username: string; username_normalized: string; created_at: string }
-        Insert: { id: string; username: string; username_normalized: string; created_at?: string }
-        Update: Partial<{ username: string; username_normalized: string }>
+        Row: {
+          id: string
+          username: string
+          username_normalized: string
+          avatar_url: string | null
+          created_at: string
+        }
+        Insert: {
+          id: string
+          username: string
+          username_normalized: string
+          avatar_url?: string | null
+          created_at?: string
+        }
+        Update: Partial<{ username: string; username_normalized: string; avatar_url: string | null }>
         Relationships: never[]
       }
       user_preferences: {
