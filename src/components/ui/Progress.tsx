@@ -14,11 +14,16 @@ export function ProgressRing({
   size = 96,
   strokeWidth = 10,
   label,
+  /** Set false when the surrounding UI already states the number, to avoid repeating it. */
+  showValue = true,
+  centre,
 }: {
   value: number
   size?: number
   strokeWidth?: number
   label?: string
+  showValue?: boolean
+  centre?: React.ReactNode
 }) {
   const clamped = Math.max(0, Math.min(100, value))
   const radius = (size - strokeWidth) / 2
@@ -56,7 +61,8 @@ export function ProgressRing({
         </defs>
       </svg>
       <div className="bm-ring-label">
-        <strong>{Math.round(clamped)}%</strong>
+        {showValue ? <strong>{Math.round(clamped)}%</strong> : null}
+        {centre}
         {label ? <span>{label}</span> : null}
       </div>
     </div>

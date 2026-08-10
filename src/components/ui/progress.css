@@ -48,3 +48,16 @@
   font-size: 11px;
   color: var(--text-secondary);
 }
+
+.bm-ring-fraction {
+  font-family: var(--font-bold);
+  font-size: 21px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: baseline;
+}
+
+.bm-ring-fraction span {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
