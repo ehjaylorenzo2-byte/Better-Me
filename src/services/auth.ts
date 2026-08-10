@@ -149,6 +149,40 @@ export async function getCurrentUsername(userId: string): Promise<string | null>
   return data.username
 }
 
+export interface ProfileIdentity {
+  username: string
+  /** Free-form name shown throughout the app. Falls back to the username. */
+  displayName: string
+}
+
+export async function getProfileIdentity(userId: string): Promise<ProfileIdentity | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('username, display_name')
+    .eq('id', userId)
+    .maybeSingle()
+  if (error || !data) return null
+  return {
+    username: data.username,
+    displayName: (data.display_name ?? '').trim() || data.username,
+  }
+}
+
+/**
+ * Updates only the display name. Deliberately does NOT touch the username or
+ * the auth identity, so renaming yourself can never affect your ability to
+ * log in. Duplicates are fine here; this is a label, not an identifier.
+ */
+export async function updateDisplayName(userId: string, name: string): Promise<AuthResult> {
+  const trimmed = name.trim().replace(/\s+/g, ' ')
+  if (!trimmed) return { success: false, error: 'Enter a name.' }
+  if (trimmed.length > 40) return { success: false, error: 'Keep your name under 40 characters.' }
+
+  const { error } = await supabase.from('profiles').update({ display_name: trimmed }).eq('id', userId)
+  if (error) return { success: false, error: 'Could not save your name. Try again.' }
+  return { success: true }
+}
+
 
 /**
  * Changes the username, which in Better Me is also the login identifier.
