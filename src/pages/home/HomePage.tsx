@@ -52,7 +52,7 @@ function useCountUp(target: number, duration = 700): number {
 }
 
 export function HomePage() {
-  const { userId, username } = useAuth()
+  const { userId, username, displayName } = useAuth()
   const navigate = useNavigate()
   const today = getPhilippineToday()
 
@@ -134,10 +134,10 @@ export function HomePage() {
       {/* ---- Identity header: avatar left, greeting, name, motivation ---- */}
       <header className="bm-home-top bm-enter">
         <Link to="/profile" className="bm-home-identity bm-press" aria-label="Open your profile">
-          <Avatar url={avatarUrl} username={username} size={52} />
+          <Avatar url={avatarUrl} username={displayName ?? username} size={64} />
           <span className="bm-home-identity-text">
             <span className="bm-home-greeting">{greeting} 👋</span>
-            <span className="bm-home-name">{username ?? '...'}</span>
+            <span className="bm-home-name">{displayName ?? username ?? '...'}</span>
           </span>
         </Link>
         <Link to="/profile/notifications" className="bm-home-bell bm-press" aria-label="Notification settings">
