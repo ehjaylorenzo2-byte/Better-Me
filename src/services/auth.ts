@@ -148,3 +148,71 @@ export async function getCurrentUsername(userId: string): Promise<string | null>
   if (error || !data) return null
   return data.username
 }
+
+
+/**
+ * Changes the username, which in Better Me is also the login identifier.
+ *
+ * The username maps to an internal Supabase auth alias
+ * ("jordan" -> "jordan@betterme.local"), so a rename has to move BOTH the auth
+ * identity and the profile row. Order matters: we move the auth identity first
+ * and only touch the profile once that has demonstrably taken effect. If the
+ * auth change is refused or held pending, nothing changes at all and the user
+ * can still log in with their existing username.
+ */
+export async function changeUsername(userId: string, rawNewUsername: string): Promise<AuthResult> {
+  const check = validateUsername(rawNewUsername)
+  if (!check.valid) return { success: false, error: check.error }
+
+  const normalized = normalizeUsername(rawNewUsername)
+
+  const { data: current } = await supabase.auth.getUser()
+  const currentAlias = current.user?.email?.toLowerCase() ?? ''
+  const newAlias = usernameToAuthAlias(normalized)
+
+  if (currentAlias === newAlias.toLowerCase()) {
+    return { success: false, error: 'That is already your username.' }
+  }
+
+  const available = await checkUsernameAvailable(normalized)
+  if (!available) {
+    return {
+      success: false,
+      error: 'That username is already taken.',
+      suggestions: await suggestUsernames(normalized),
+    }
+  }
+
+  const { error: authError } = await supabase.auth.updateUser({ email: newAlias })
+  if (authError) {
+    return { success: false, error: describeAuthError(authError.message) }
+  }
+
+  // Confirm the identity actually moved. Supabase will hold an email change
+  // pending confirmation if "Secure email change" or "Confirm email" is on, and
+  // because our aliases are synthetic no one can ever click those links. Detect
+  // that explicitly rather than leaving the user with a half-applied rename.
+  const { data: after } = await supabase.auth.getUser()
+  if ((after.user?.email ?? '').toLowerCase() !== newAlias.toLowerCase()) {
+    return {
+      success: false,
+      error:
+        'Supabase is holding this change for email confirmation, which this app cannot use. In Supabase go to Authentication > Sign In / Providers > Email and turn off "Secure email change", then try again. Your current username still works.',
+    }
+  }
+
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({ username: rawNewUsername.trim(), username_normalized: normalized })
+    .eq('id', userId)
+
+  if (profileError) {
+    return {
+      success: false,
+      error:
+        'Your login was updated but the display name did not save. Log in with the new username and try renaming again.',
+    }
+  }
+
+  return { success: true }
+}
