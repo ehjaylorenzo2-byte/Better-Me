@@ -10,6 +10,7 @@ function mapCategory(row: {
   balance_centavos: number
   color?: string
   icon?: string
+  account_id?: string | null
   created_at: string
 }): SavingsCategory {
   return {
@@ -20,6 +21,7 @@ function mapCategory(row: {
     balance: row.balance_centavos,
     color: row.color ?? 'mint',
     icon: row.icon ?? 'piggy-bank',
+    accountId: row.account_id ?? null,
     createdAt: row.created_at,
   }
 }
@@ -31,6 +33,7 @@ function mapTransaction(row: {
   type: 'deposit' | 'withdrawal'
   amount_centavos: number
   note: string | null
+  counter_account_id?: string | null
   created_at: string
 }): SavingsTransaction {
   return {
@@ -40,6 +43,7 @@ function mapTransaction(row: {
     type: row.type,
     amount: row.amount_centavos,
     note: row.note,
+    counterAccountId: row.counter_account_id ?? null,
     createdAt: row.created_at,
   }
 }
@@ -60,6 +64,8 @@ export async function createSavingsCategory(
   goalAmount?: Centavos | null,
   color = 'mint',
   icon = 'piggy-bank',
+  /** The bank this goal is held in. */
+  accountId: string | null = null,
 ): Promise<SavingsCategory> {
   if (!name.trim()) throw new Error('Category name is required.')
   if (goalAmount !== undefined && goalAmount !== null && goalAmount <= 0) {
@@ -73,6 +79,7 @@ export async function createSavingsCategory(
       goal_amount_centavos: goalAmount ?? null,
       color,
       icon,
+      account_id: accountId,
     })
     .select('*')
     .single()
@@ -82,9 +89,21 @@ export async function createSavingsCategory(
 
 export async function updateSavingsCategory(
   categoryId: string,
-  updates: { name?: string; goalAmount?: Centavos | null; color?: string; icon?: string },
+  updates: {
+    name?: string
+    goalAmount?: Centavos | null
+    color?: string
+    icon?: string
+    accountId?: string | null
+  },
 ): Promise<void> {
-  const payload: { name?: string; goal_amount_centavos?: number | null; color?: string; icon?: string } = {}
+  const payload: {
+    name?: string
+    goal_amount_centavos?: number | null
+    color?: string
+    icon?: string
+    account_id?: string | null
+  } = {}
   if (updates.name !== undefined) {
     if (!updates.name.trim()) throw new Error('Category name is required.')
     payload.name = updates.name.trim()
@@ -97,6 +116,7 @@ export async function updateSavingsCategory(
   }
   if (updates.color !== undefined) payload.color = updates.color
   if (updates.icon !== undefined) payload.icon = updates.icon
+  if (updates.accountId !== undefined) payload.account_id = updates.accountId
 
   const { error } = await supabase.from('savings_categories').update(payload).eq('id', categoryId)
   if (error) throw error
@@ -118,18 +138,27 @@ export async function listTransactionsForCategory(categoryId: string): Promise<S
   return (data ?? []).map(mapTransaction)
 }
 
-/** Atomic, validated deposit/withdrawal via record_savings_transaction RPC (never a naive read-modify-write). */
+/**
+ * Atomic, validated deposit or withdrawal via the record_savings_transaction
+ * RPC, never a naive read-modify-write.
+ *
+ * counterAccountId is the bank on the far side: the one funding a deposit, or
+ * receiving a withdrawal. The server checks it belongs to the caller, so one
+ * person cannot push money through another person's wallet.
+ */
 export async function recordSavingsTransaction(
   categoryId: string,
   type: 'deposit' | 'withdrawal',
   amount: Centavos,
   note?: string | null,
+  counterAccountId: string | null = null,
 ): Promise<SavingsCategory> {
   const { data, error } = await supabase.rpc('record_savings_transaction', {
     p_category_id: categoryId,
     p_type: type,
     p_amount_centavos: amount,
     p_note: note ?? null,
+    p_counter_account_id: counterAccountId,
   })
   if (error) throw new Error(error.message)
   return mapCategory(data)

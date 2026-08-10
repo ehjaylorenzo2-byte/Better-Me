@@ -32,6 +32,8 @@ function mapPayment(row: {
   user_id: string
   amount_centavos: number
   note: string | null
+  account_id?: string | null
+  entry_date?: string
   created_at: string
 }): DebtPayment {
   return {
@@ -40,6 +42,10 @@ function mapPayment(row: {
     userId: row.user_id,
     amount: row.amount_centavos,
     note: row.note,
+    accountId: row.account_id ?? null,
+    // Payments recorded before wallets have no date of their own, so fall back
+    // to the day they were created rather than leaving the field empty.
+    entryDate: row.entry_date ?? row.created_at.slice(0, 10),
     createdAt: row.created_at,
   }
 }
@@ -111,13 +117,48 @@ export async function listPaymentsForDebt(debtId: string): Promise<DebtPayment[]
   return (data ?? []).map(mapPayment)
 }
 
-/** Atomic, validated payment via record_debt_payment RPC. Rejects overpayment server-side too. */
-export async function recordDebtPayment(debtId: string, amount: Centavos, note?: string | null): Promise<Debt> {
+/**
+ * Atomic, validated payment via the record_debt_payment RPC. Rejects
+ * overpayment server-side too.
+ *
+ * A payment is spending: it leaves accountId, counts in the month's money out
+ * and in the category breakdown, and reduces what is owed. One entry, three
+ * effects, which is how it was already being logged by hand.
+ */
+export async function recordDebtPayment(
+  debtId: string,
+  amount: Centavos,
+  note?: string | null,
+  accountId: string | null = null,
+  entryDate: string | null = null,
+): Promise<Debt> {
   const { data, error } = await supabase.rpc('record_debt_payment', {
     p_debt_id: debtId,
     p_amount_centavos: amount,
     p_note: note ?? null,
+    p_account_id: accountId,
+    p_entry_date: entryDate,
   })
   if (error) throw new Error(error.message)
   return mapDebt(data)
+}
+
+/**
+ * Every debt payment in a month, across all debts.
+ *
+ * The Finance screen needs these to count payments as spending, which means
+ * asking by date rather than by debt. Payments made before wallets have no
+ * entry_date of their own; the migration defaults them to the day they were
+ * created, so they still land in the right month.
+ */
+export async function listPaymentsForMonth(userId: string, month: string): Promise<DebtPayment[]> {
+  const { data, error } = await supabase
+    .from('debt_payments')
+    .select('*')
+    .eq('user_id', userId)
+    .gte('entry_date', `${month}-01`)
+    .lte('entry_date', `${month}-31`)
+    .order('entry_date', { ascending: false })
+  if (error) throw error
+  return (data ?? []).map(mapPayment)
 }

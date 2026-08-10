@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { AccountFlow, FinanceAccount } from '@/types/models'
+import type { AccountFlow, AccountWithBalance, FinanceAccount } from '@/types/models'
 
 interface Row {
   id: string
@@ -11,6 +11,7 @@ interface Row {
   is_builtin: boolean
   archived: boolean
   sort_order: number
+  starting_balance_centavos?: number
 }
 
 function map(row: Row): FinanceAccount {
@@ -24,6 +25,7 @@ function map(row: Row): FinanceAccount {
     isBuiltin: row.is_builtin,
     archived: row.archived,
     sortOrder: row.sort_order,
+    startingBalance: row.starting_balance_centavos ?? 0,
   }
 }
 
@@ -79,6 +81,29 @@ export async function listAccounts(
 
 export function buildAccountLookup(accounts: FinanceAccount[]): Map<string, FinanceAccount> {
   return new Map(accounts.map((a) => [a.id, a]))
+}
+
+/**
+ * Accounts with their current balances.
+ *
+ * The balance comes from the finance_account_balances view rather than being
+ * summed here. Recomputing it on the client would mean two implementations of
+ * the same formula that have to agree forever, and the moment a new kind of
+ * entry is added one of them gets forgotten.
+ */
+export async function listAccountsWithBalances(
+  userId: string,
+  options: { includeArchived?: boolean } = {},
+): Promise<AccountWithBalance[]> {
+  const [accounts, balances] = await Promise.all([
+    listAccounts(userId, options),
+    supabase.from('finance_account_balances').select('id, balance_centavos').eq('user_id', userId),
+  ])
+
+  if (balances.error) throw balances.error
+  const byId = new Map((balances.data ?? []).map((b) => [b.id, b.balance_centavos]))
+
+  return accounts.map((account) => ({ ...account, balance: byId.get(account.id) ?? account.startingBalance }))
 }
 
 export interface AccountDraft {
