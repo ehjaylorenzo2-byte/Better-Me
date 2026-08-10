@@ -8,6 +8,7 @@ import { listDebts } from '@/services/debt'
 import { calculateTotalDebt } from '@/utils/calculations'
 import { formatCurrency } from '@/utils/money'
 import type { Debt } from '@/types/models'
+import '../finance/finance.css'
 import './debt.css'
 
 export function DebtOverviewPage() {
@@ -43,21 +44,26 @@ export function DebtOverviewPage() {
   return (
     <div>
       <PageHeader
-        title="Debt Tracker"
+        title="Debts"
         action={
-          <button className="bm-link" onClick={() => navigate('/debt/new')}>
-            + Add
+          <button className="bm-link" onClick={() => navigate('/finance/debts/edit')}>
+            Edit
           </button>
         }
       />
 
-      <Card elevated style={{ marginBottom: 16, textAlign: 'center' }}>
-        <p className="bm-summary-label">Total Debt</p>
-        <p className="bm-balance-value" style={{ fontSize: 28 }}>
-          {formatCurrency(total)}
-        </p>
-        <p className="bm-summary-label">Total amount you owe</p>
-      </Card>
+      <header className="bm-total-head" style={{ marginBottom: 16 }}>
+        <p className="bm-caption">Total debt</p>
+        <h1 className="bm-display num tone-out">{formatCurrency(total)}</h1>
+        <p className="bm-caption">What you still owe</p>
+      </header>
+
+      <Link to="/debt/new" className="bm-add-cta bm-press" style={{ marginBottom: 18 }}>
+        <span className="bm-add-cta-plus" aria-hidden="true">
+          +
+        </span>
+        Add debt
+      </Link>
 
       {debts.length === 0 ? (
         <EmptyState message="Nothing owed. Keep it that way." />
