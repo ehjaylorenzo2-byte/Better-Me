@@ -8,6 +8,9 @@ import { LoadingState } from '@/components/ui/States'
 import { useToast } from '@/components/ui/Toast'
 import { addExpense } from '@/services/finance'
 import { ensureDefaultCategories, listCategories, type FinanceCategory } from '@/services/categories'
+import { AccountPicker } from '@/components/finance/AccountPicker'
+import { ensureDefaultAccounts, listAccounts } from '@/services/accounts'
+import type { FinanceAccount } from '@/types/models'
 import { getPhilippineToday } from '@/utils/timezone'
 import { isValidMoneyInput, pesoToCentavos } from '@/utils/money'
 import { CategoryPicker } from './CategoryPicker'
@@ -24,6 +27,8 @@ export function AddExpensePage() {
   const [category, setCategory] = useState('')
   const [date, setDate] = useState(getPhilippineToday())
   const [description, setDescription] = useState('')
+  const [accounts, setAccounts] = useState<FinanceAccount[]>([])
+  const [accountId, setAccountId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -32,12 +37,13 @@ export function AddExpensePage() {
     let active = true
     ;(async () => {
       try {
-        await ensureDefaultCategories()
-        const all = await listCategories(userId)
+        await Promise.all([ensureDefaultCategories(), ensureDefaultAccounts()])
+        const [all, accs] = await Promise.all([listCategories(userId), listAccounts(userId)])
         if (!active) return
         const expense = all.filter((c) => c.kind === 'expense')
         setCategories(expense)
         setCategory((current) => current || expense[0]?.name || '')
+        setAccounts(accs)
       } catch {
         if (active) setError('Could not load your categories.')
       } finally {
@@ -63,7 +69,7 @@ export function AddExpensePage() {
     setSaving(true)
     setError(null)
     try {
-      await addExpense(userId, pesoToCentavos(amount), category, date, description || null)
+      await addExpense(userId, pesoToCentavos(amount), category, date, description || null, accountId)
       show('Expense added.', 'success')
       navigate('/finance/expenses')
     } catch (err) {
@@ -82,6 +88,7 @@ export function AddExpensePage() {
         {error ? <div className="bm-auth-error">{error}</div> : null}
         <CurrencyInput label="Amount" value={amount} onChange={setAmount} autoFocus />
         <CategoryPicker categories={categories} value={category} onChange={setCategory} label="Category" />
+        <AccountPicker accounts={accounts} value={accountId} onChange={setAccountId} label="Paid from" />
         <Input label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         <Input
           label="Description (optional)"

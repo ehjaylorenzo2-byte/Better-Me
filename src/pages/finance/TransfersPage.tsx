@@ -4,25 +4,23 @@ import { LoadingState, ErrorState } from '@/components/ui/States'
 import { SectionRow } from '@/components/ui/SectionRow'
 import { ConfirmDialog } from '@/components/ui/Sheet'
 import { useToast } from '@/components/ui/Toast'
-import { deleteIncomeEntry, listIncomeForMonth } from '@/services/finance'
-import { buildCategoryLookup, listCategories, type FinanceCategory } from '@/services/categories'
-import { buildAccountLookup, listAccounts } from '@/services/accounts'
+import { deleteTransfer, listTransfersForMonth } from '@/services/transfers'
+import { buildAccountLookup, ensureDefaultAccounts, listAccounts } from '@/services/accounts'
 import { getCurrentPhilippineMonth, relativeDayLabel } from '@/utils/timezone'
 import { addCentavos, formatCurrency } from '@/utils/money'
-import type { FinanceAccount, IncomeEntry } from '@/types/models'
+import type { FinanceAccount, Transfer } from '@/types/models'
 import { DayGroup, SectionEmpty, SectionShell } from './SectionShell'
 import './finance.css'
 
-export function IncomePage() {
+export function TransfersPage() {
   const { userId } = useAuth()
   const { show } = useToast()
 
-  const [entries, setEntries] = useState<IncomeEntry[]>([])
-  const [categories, setCategories] = useState<FinanceCategory[]>([])
+  const [entries, setEntries] = useState<Transfer[]>([])
   const [accounts, setAccounts] = useState<FinanceAccount[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [pendingDelete, setPendingDelete] = useState<IncomeEntry | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<Transfer | null>(null)
 
   const month = getCurrentPhilippineMonth()
 
@@ -31,16 +29,15 @@ export function IncomePage() {
     setLoading(true)
     setError(null)
     try {
-      const [list, cats, accs] = await Promise.all([
-        listIncomeForMonth(userId, month),
-        listCategories(userId, { includeArchived: true }),
+      await ensureDefaultAccounts()
+      const [list, accs] = await Promise.all([
+        listTransfersForMonth(userId, month),
         listAccounts(userId, { includeArchived: true }),
       ])
       setEntries(list)
-      setCategories(cats)
       setAccounts(accs)
     } catch {
-      setError('Could not load your income.')
+      setError('Could not load your transfers.')
     } finally {
       setLoading(false)
     }
@@ -52,11 +49,10 @@ export function IncomePage() {
   }, [userId, month])
 
   const total = useMemo(() => addCentavos(...entries.map((e) => e.amount)), [entries])
-  const categoryLookup = useMemo(() => buildCategoryLookup(categories), [categories])
   const accountLookup = useMemo(() => buildAccountLookup(accounts), [accounts])
 
   const grouped = useMemo(() => {
-    const map = new Map<string, IncomeEntry[]>()
+    const map = new Map<string, Transfer[]>()
     for (const entry of entries) {
       const list = map.get(entry.entryDate) ?? []
       list.push(entry)
@@ -65,16 +61,18 @@ export function IncomePage() {
     return [...map.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1))
   }, [entries])
 
+  const nameFor = (id: string | null) => (id ? accountLookup.get(id)?.name ?? 'Deleted bank' : 'Outside')
+
   const confirmDelete = async () => {
     if (!pendingDelete) return
     const entry = pendingDelete
     setPendingDelete(null)
     try {
-      await deleteIncomeEntry(entry.id)
-      show('Income removed.', 'success')
+      await deleteTransfer(entry.id)
+      show('Transfer removed.', 'success')
       load()
     } catch {
-      show('Could not remove that entry.', 'error')
+      show('Could not remove that transfer.', 'error')
     }
   }
 
@@ -83,40 +81,42 @@ export function IncomePage() {
 
   return (
     <SectionShell
-      title="Income"
+      title="Transfers"
       total={total}
-      totalLabel="Earned this month"
-      totalTone="in"
-      editHref="/finance/income/edit"
-      addHref="/finance/income/new"
-      addLabel="Add income"
+      totalLabel="Moved this month"
+      editHref="/finance/transfers/edit"
+      addHref="/finance/transfers/new"
+      addLabel="Add transfer"
     >
+      <p className="bm-section-note">
+        A transfer moves money between your own accounts. It is not income and not an expense, so it
+        never changes your Total Balance. It only changes which bank the money is sitting in.
+      </p>
+
       {grouped.length === 0 ? (
         <SectionEmpty
-          title="No income logged this month"
-          body="Log what comes in and Total Balance starts telling you something true instead of just counting what you spent."
+          title="No transfers this month"
+          body="Log a transfer when you move money from one of your accounts to another, like cash into BPI. Recording it as an expense plus an income would inflate both of your monthly totals."
         />
       ) : (
         grouped.map(([date, list]) => (
           <DayGroup
             key={date}
             label={relativeDayLabel(date)}
-            total={`+${formatCurrency(addCentavos(...list.map((e) => e.amount)))}`}
+            total={formatCurrency(addCentavos(...list.map((e) => e.amount)))}
           >
             {list.map((entry) => {
-              const category = categoryLookup.get(entry.source.toLowerCase())
-              const account = entry.accountId ? accountLookup.get(entry.accountId) : null
-              const meta = [account?.name, entry.note].filter(Boolean).join(' · ')
+              const from = entry.fromAccountId ? accountLookup.get(entry.fromAccountId) : null
               return (
                 <SectionRow
                   key={entry.id}
                   onClick={() => setPendingDelete(entry)}
-                  icon={category?.icon ?? 'banknote'}
-                  color={category?.color ?? 'lime'}
-                  title={entry.source}
-                  subtitle={meta || undefined}
-                  value={`+${formatCurrency(entry.amount)}`}
-                  valueTone="in"
+                  icon={from?.icon ?? 'repeat'}
+                  color={from?.color ?? 'sky'}
+                  title={`${nameFor(entry.fromAccountId)} to ${nameFor(entry.toAccountId)}`}
+                  subtitle={entry.note ?? undefined}
+                  value={formatCurrency(entry.amount)}
+                  valueTone="muted"
                   chevron={false}
                 />
               )
@@ -127,10 +127,12 @@ export function IncomePage() {
 
       <ConfirmDialog
         open={pendingDelete !== null}
-        title="Remove this income?"
+        title="Remove this transfer?"
         message={
           pendingDelete
-            ? `${pendingDelete.source}, ${formatCurrency(pendingDelete.amount)}. This cannot be undone.`
+            ? `${formatCurrency(pendingDelete.amount)} from ${nameFor(pendingDelete.fromAccountId)} to ${nameFor(
+                pendingDelete.toAccountId,
+              )}. This cannot be undone.`
             : ''
         }
         confirmLabel="Remove"

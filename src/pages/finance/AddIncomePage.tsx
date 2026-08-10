@@ -8,6 +8,9 @@ import { LoadingState } from '@/components/ui/States'
 import { useToast } from '@/components/ui/Toast'
 import { addIncome } from '@/services/finance'
 import { ensureDefaultCategories, listCategories, type FinanceCategory } from '@/services/categories'
+import { AccountPicker } from '@/components/finance/AccountPicker'
+import { ensureDefaultAccounts, listAccounts } from '@/services/accounts'
+import type { FinanceAccount } from '@/types/models'
 import { getPhilippineToday } from '@/utils/timezone'
 import { isValidMoneyInput, pesoToCentavos } from '@/utils/money'
 import { CategoryPicker } from './CategoryPicker'
@@ -24,6 +27,8 @@ export function AddIncomePage() {
   const [source, setSource] = useState('')
   const [date, setDate] = useState(getPhilippineToday())
   const [note, setNote] = useState('')
+  const [accounts, setAccounts] = useState<FinanceAccount[]>([])
+  const [accountId, setAccountId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -32,12 +37,13 @@ export function AddIncomePage() {
     let active = true
     ;(async () => {
       try {
-        await ensureDefaultCategories()
-        const all = await listCategories(userId)
+        await Promise.all([ensureDefaultCategories(), ensureDefaultAccounts()])
+        const [all, accs] = await Promise.all([listCategories(userId), listAccounts(userId)])
         if (!active) return
         const income = all.filter((c) => c.kind === 'income')
         setCategories(income)
         setSource((current) => current || income[0]?.name || '')
+        setAccounts(accs)
       } catch {
         if (active) setError('Could not load your categories.')
       } finally {
@@ -63,7 +69,7 @@ export function AddIncomePage() {
     setSaving(true)
     setError(null)
     try {
-      await addIncome(userId, pesoToCentavos(amount), source, date, note || null)
+      await addIncome(userId, pesoToCentavos(amount), source, date, note || null, accountId)
       show('Income added.', 'success')
       navigate('/finance/income')
     } catch (err) {
@@ -82,6 +88,7 @@ export function AddIncomePage() {
         {error ? <div className="bm-auth-error">{error}</div> : null}
         <CurrencyInput label="Amount" value={amount} onChange={setAmount} autoFocus />
         <CategoryPicker categories={categories} value={source} onChange={setSource} label="Source" />
+        <AccountPicker accounts={accounts} value={accountId} onChange={setAccountId} label="Landed in" />
         <Input label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         <Input label="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
         <Button type="submit" fullWidth loading={saving}>
