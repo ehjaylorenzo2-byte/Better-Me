@@ -93,3 +93,22 @@
 .bm-switch.on .bm-switch-dot {
   transform: translateX(20px);
 }
+
+.bm-settings-note {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.bm-settings-note strong {
+  color: var(--accent);
+  font-family: var(--font-bold);
+}
+
+.bm-settings-footnote {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  line-height: 1.6;
+  text-align: center;
+  padding: 0 8px;
+}
