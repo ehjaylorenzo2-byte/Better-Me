@@ -1,0 +1,78 @@
+.bm-progress-track {
+  width: 100%;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--border);
+  overflow: hidden;
+}
+
+.bm-progress-fill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  transition: width 320ms ease;
+}
+
+.bm-progress-accent {
+  background: var(--accent);
+}
+
+[data-theme='light'] .bm-progress-accent {
+  /* Raw lime on a white track is nearly invisible, so darken it here. */
+  background: color-mix(in srgb, var(--accent) 72%, #101208);
+}
+
+.bm-progress-danger {
+  background: var(--danger);
+}
+
+.bm-progress-warning {
+  background: var(--warning);
+}
+
+.bm-ring-track {
+  stroke: var(--border-strong);
+  transition: stroke 180ms ease;
+}
+
+.bm-ring-value {
+  stroke: var(--text-primary);
+  transition: stroke-dashoffset 420ms cubic-bezier(0.22, 1, 0.36, 1), stroke 180ms ease;
+}
+
+.bm-ring {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bm-ring-label {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--text-primary);
+}
+
+.bm-ring-label strong {
+  font-family: var(--font-bold);
+  font-size: 22px;
+}
+
+.bm-ring-label span {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.bm-ring-fraction {
+  font-family: var(--font-bold);
+  font-size: 21px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: baseline;
+}
+
+.bm-ring-fraction span {
+  font-size: 13px;
+  color: var(--text-secondary);
+}

@@ -86,6 +86,8 @@ export interface IncomeEntry {
   source: string
   entryDate: IsoDate
   note: string | null
+  /** Which bank or wallet the money landed in. Optional by design. */
+  accountId: string | null
 }
 
 export interface ExpenseEntry {
@@ -95,6 +97,45 @@ export interface ExpenseEntry {
   category: string
   entryDate: IsoDate
   description: string | null
+  /** Which bank or wallet it was paid from. Optional by design. */
+  accountId: string | null
+}
+
+/**
+ * How a bank or wallet is used.
+ *
+ * The split matters because the two numbers mean opposite things and must never
+ * be added together: an outgoing account reports what you spent from it, a
+ * savings account reports what went into it.
+ */
+export type AccountFlow = 'outgoing' | 'savings' | 'both'
+
+export interface FinanceAccount {
+  id: string
+  userId: string
+  name: string
+  flow: AccountFlow
+  color: string
+  icon: string
+  isBuiltin: boolean
+  archived: boolean
+  sortOrder: number
+}
+
+/**
+ * Money moved between two of your own accounts.
+ *
+ * Deliberately not an expense plus an income: logged that way it would inflate
+ * both monthly totals and put a phantom entry in the spending breakdown.
+ */
+export interface Transfer {
+  id: string
+  userId: string
+  fromAccountId: string | null
+  toAccountId: string | null
+  amount: Centavos
+  entryDate: IsoDate
+  note: string | null
 }
 
 export interface Budget {

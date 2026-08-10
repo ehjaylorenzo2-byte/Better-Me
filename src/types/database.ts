@@ -198,6 +198,7 @@ export interface Database {
           source: string
           entry_date: string
           note: string | null
+          account_id: string | null
           created_at: string
         }
         Insert: {
@@ -207,8 +208,15 @@ export interface Database {
           source: string
           entry_date: string
           note?: string | null
+          account_id?: string | null
         }
-        Update: Partial<{ amount_centavos: number; source: string; entry_date: string; note: string | null }>
+        Update: Partial<{
+          amount_centavos: number
+          source: string
+          entry_date: string
+          note: string | null
+          account_id: string | null
+        }>
         Relationships: never[]
       }
       expense_entries: {
@@ -219,6 +227,7 @@ export interface Database {
           category: string
           entry_date: string
           description: string | null
+          account_id: string | null
           created_at: string
         }
         Insert: {
@@ -228,12 +237,14 @@ export interface Database {
           category: string
           entry_date: string
           description?: string | null
+          account_id?: string | null
         }
         Update: Partial<{
           amount_centavos: number
           category: string
           entry_date: string
           description: string | null
+          account_id: string | null
         }>
         Relationships: never[]
       }
@@ -330,6 +341,69 @@ export interface Database {
         Update: never
         Relationships: never[]
       }
+      finance_accounts: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          flow: 'outgoing' | 'savings' | 'both'
+          color: string
+          icon: string
+          is_builtin: boolean
+          archived: boolean
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          flow?: 'outgoing' | 'savings' | 'both'
+          color?: string
+          icon?: string
+          is_builtin?: boolean
+          archived?: boolean
+          sort_order?: number
+        }
+        Update: Partial<{
+          name: string
+          flow: 'outgoing' | 'savings' | 'both'
+          color: string
+          icon: string
+          archived: boolean
+          sort_order: number
+        }>
+        Relationships: never[]
+      }
+      transfers: {
+        Row: {
+          id: string
+          user_id: string
+          from_account_id: string | null
+          to_account_id: string | null
+          amount_centavos: number
+          entry_date: string
+          note: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          from_account_id?: string | null
+          to_account_id?: string | null
+          amount_centavos: number
+          entry_date: string
+          note?: string | null
+        }
+        Update: Partial<{
+          from_account_id: string | null
+          to_account_id: string | null
+          amount_centavos: number
+          entry_date: string
+          note: string | null
+        }>
+        Relationships: never[]
+      }
       finance_categories: {
         Row: {
           id: string
@@ -388,6 +462,7 @@ export interface Database {
     Functions: {
       is_username_available: { Args: { p_username: string }; Returns: boolean }
       ensure_default_finance_categories: { Args: Record<string, never>; Returns: undefined }
+      ensure_default_finance_accounts: { Args: Record<string, never>; Returns: undefined }
       record_debt_payment: {
         Args: { p_debt_id: string; p_amount_centavos: number; p_note?: string | null }
         Returns: Database['public']['Tables']['debts']['Row']
