@@ -22,6 +22,7 @@ function mapIncome(row: {
   source: string
   entry_date: string
   note: string | null
+  account_id?: string | null
 }): IncomeEntry {
   return {
     id: row.id,
@@ -30,6 +31,7 @@ function mapIncome(row: {
     source: row.source,
     entryDate: row.entry_date,
     note: row.note,
+    accountId: row.account_id ?? null,
   }
 }
 
@@ -40,6 +42,7 @@ function mapExpense(row: {
   category: string
   entry_date: string
   description: string | null
+  account_id?: string | null
 }): ExpenseEntry {
   return {
     id: row.id,
@@ -48,6 +51,7 @@ function mapExpense(row: {
     category: row.category,
     entryDate: row.entry_date,
     description: row.description,
+    accountId: row.account_id ?? null,
   }
 }
 
@@ -57,11 +61,19 @@ export async function addIncome(
   source: string,
   entryDate: IsoDate,
   note?: string | null,
+  accountId?: string | null,
 ): Promise<IncomeEntry> {
   if (amount <= 0) throw new Error('Income amount must be greater than zero.')
   const { data, error } = await supabase
     .from('income_entries')
-    .insert({ user_id: userId, amount_centavos: amount, source, entry_date: entryDate, note: note ?? null })
+    .insert({
+      user_id: userId,
+      amount_centavos: amount,
+      source,
+      entry_date: entryDate,
+      note: note ?? null,
+      account_id: accountId ?? null,
+    })
     .select('*')
     .single()
   if (error) throw error
@@ -74,6 +86,7 @@ export async function addExpense(
   category: string,
   entryDate: IsoDate,
   description?: string | null,
+  accountId?: string | null,
 ): Promise<ExpenseEntry> {
   if (amount <= 0) throw new Error('Expense amount must be greater than zero.')
   const { data, error } = await supabase
@@ -84,6 +97,7 @@ export async function addExpense(
       category,
       entry_date: entryDate,
       description: description ?? null,
+      account_id: accountId ?? null,
     })
     .select('*')
     .single()
