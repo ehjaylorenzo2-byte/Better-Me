@@ -133,6 +133,14 @@
   flex-shrink: 0;
 }
 
+.bm-bank-amount.out {
+  color: var(--money-out-text);
+}
+
+.bm-bank-amount.in {
+  color: var(--accent-text);
+}
+
 .bm-bank-meta {
   font-size: 11.5px;
   color: var(--text-secondary);
