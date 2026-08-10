@@ -244,3 +244,82 @@ export function calculateAccountTotals(
     }
   })
 }
+
+// ---------------------------------------------------------------------------
+// Wallet balances
+// ---------------------------------------------------------------------------
+
+/**
+ * Total Balance is the sum of every account balance.
+ *
+ * Deliberately not income minus expenses. The two agree once everything is
+ * tagged, but only this version can disagree with a real banking app, and that
+ * disagreement is the useful signal: it means something went unlogged.
+ *
+ * Negative balances are summed as they are. An account that has drifted below
+ * zero is information, not an error to be clamped away.
+ */
+export function sumAccountBalances(balances: Array<{ balance: Centavos }>): Centavos {
+  return balances.reduce((total, a) => total + a.balance, 0)
+}
+
+/**
+ * Money out for the month: expenses plus debt payments.
+ *
+ * Debt payments are spending. They leave a bank and they are gone, so they
+ * belong in the monthly total, the budget and the category breakdown. Keeping
+ * them out would make a month of heavy repayment look like a cheap month.
+ */
+export function calculateMoneyOut(
+  expenses: Array<{ amount: Centavos }>,
+  debtPayments: Array<{ amount: Centavos }> = [],
+): Centavos {
+  return addCentavos(...expenses.map((e) => e.amount), ...debtPayments.map((p) => p.amount))
+}
+
+export type MovementDirection = 'in' | 'out' | 'moved'
+
+export interface SortableMovement {
+  entryDate: string
+  createdAt: string
+}
+
+/**
+ * Newest first, by day and then by the order things were entered.
+ *
+ * Sorting on entryDate alone puts three entries logged on the same day in
+ * whatever order the database returned them, which makes the Recent list look
+ * shuffled every refresh.
+ */
+export function sortMovements<T extends SortableMovement>(movements: T[]): T[] {
+  return [...movements].sort((a, b) => {
+    if (a.entryDate !== b.entryDate) return a.entryDate < b.entryDate ? 1 : -1
+    if (a.createdAt !== b.createdAt) return a.createdAt < b.createdAt ? 1 : -1
+    return 0
+  })
+}
+
+/** The most recent handful, for the Recent block on the Finance screen. */
+export function takeRecent<T extends SortableMovement>(movements: T[], count = 5): T[] {
+  return sortMovements(movements).slice(0, count)
+}
+
+/**
+ * How a movement affects Total Balance.
+ *
+ * A transfer and a savings deposit both move money between your own accounts,
+ * so neither changes the total. Only income raises it and only spending lowers
+ * it. Getting this wrong is the single easiest way to make the whole screen lie.
+ */
+export function movementDirection(kind: 'income' | 'expense' | 'transfer' | 'savings' | 'debt'): MovementDirection {
+  switch (kind) {
+    case 'income':
+      return 'in'
+    case 'expense':
+    case 'debt':
+      return 'out'
+    case 'transfer':
+    case 'savings':
+      return 'moved'
+  }
+}
