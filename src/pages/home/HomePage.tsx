@@ -9,7 +9,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/ui/States'
 import { getOccurrencesInRange } from '@/services/habits'
 import { getBudgetForMonth, listExpensesForMonth } from '@/services/finance'
 import { getAvatarUrl } from '@/services/avatar'
-import { getCategoryColor, colorForLabel } from '@/theme/categoryStyles'
+import { chipVarsForLabel } from '@/theme/categoryStyles'
 import {
   addDaysToIsoDate,
   formatIsoTime12h,
@@ -134,7 +134,7 @@ export function HomePage() {
       {/* ---- Identity header: avatar left, greeting, name, motivation ---- */}
       <header className="bm-home-top bm-enter">
         <Link to="/profile" className="bm-home-identity bm-press" aria-label="Open your profile">
-          <Avatar url={avatarUrl} username={displayName ?? username} size={64} />
+          <Avatar url={avatarUrl} username={displayName ?? username} size={56} />
           <span className="bm-home-identity-text">
             <span className="bm-home-greeting">{greeting} 👋</span>
             <span className="bm-home-name">{displayName ?? username ?? '...'}</span>
@@ -158,9 +158,11 @@ export function HomePage() {
               <span className="bm-hero-pct">%</span>
             </p>
             <p className="bm-hero-sub">
-              {todayProgress.noStatus > 0
-                ? `${todayProgress.noStatus} still to go`
-                : 'Everything decided today'}
+              {todayProgress.scheduled === 0
+                ? 'Nothing scheduled today'
+                : todayProgress.noStatus > 0
+                  ? `${todayProgress.noStatus} still to go`
+                  : 'Everything decided today'}
             </p>
           </div>
           <ProgressRing
@@ -191,8 +193,8 @@ export function HomePage() {
       <section className="bm-quick bm-stagger">
         <QuickAction label="Add Habit" icon="star" onClick={() => navigate('/habits/new')} />
         <QuickAction label="Expense" icon="wallet" onClick={() => navigate('/finance/expense/new')} />
+        <QuickAction label="Transfer" icon="repeat" onClick={() => navigate('/finance/transfers/new')} />
         <QuickAction label="Gym" icon="dumbbell" onClick={() => navigate('/gym')} />
-        <QuickAction label="Savings" icon="piggy-bank" onClick={() => navigate('/savings')} />
       </section>
 
       {/* ---- Stat strip ---- */}
@@ -224,13 +226,12 @@ export function HomePage() {
         ) : (
           <ul className="bm-activity bm-stagger">
             {todayRows.slice(0, 6).map((row) => {
-              const swatch = colorForLabel(row.habit.name)
               return (
                 <li key={row.id}>
                   <Link to={`/habits/${row.habitId}`} className="bm-activity-row bm-press">
                     <span
-                      className="bm-activity-chip bm-chip-anim"
-                      style={{ background: swatch.tint, color: swatch.accent }}
+                      className="bm-chip bm-chip-anim"
+                      style={chipVarsForLabel(row.habit.name)}
                     >
                       <CategoryIcon name={row.habit.category === 'gym' ? 'dumbbell' : 'star'} size={19} />
                     </span>
@@ -253,10 +254,9 @@ export function HomePage() {
 }
 
 function QuickAction({ label, icon, onClick }: { label: string; icon: string; onClick: () => void }) {
-  const swatch = getCategoryColor('mint')
   return (
     <button className="bm-quick-item bm-press" onClick={onClick}>
-      <span className="bm-quick-circle bm-chip-anim" style={{ color: swatch.accent }}>
+      <span className="bm-quick-circle bm-chip-anim">
         <CategoryIcon name={icon} size={22} />
       </span>
       <span className="bm-quick-label">{label}</span>
