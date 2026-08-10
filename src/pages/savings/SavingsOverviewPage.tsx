@@ -9,6 +9,7 @@ import { listSavingsCategories } from '@/services/savings'
 import { calculateSavingsProgress, calculateTotalSavings } from '@/utils/calculations'
 import { formatCurrency } from '@/utils/money'
 import type { SavingsCategory } from '@/types/models'
+import '../finance/finance.css'
 import './savings.css'
 
 export function SavingsOverviewPage() {
@@ -46,21 +47,26 @@ export function SavingsOverviewPage() {
       <PageHeader
         title="Savings"
         action={
-          <button className="bm-link" onClick={() => navigate('/savings/new')}>
-            + Add
+          <button className="bm-link" onClick={() => navigate('/finance/savings/edit')}>
+            Edit
           </button>
         }
       />
 
-      <Card elevated style={{ marginBottom: 16, textAlign: 'center' }}>
-        <p className="bm-summary-label">Total Saved</p>
-        <p className="bm-balance-value" style={{ fontSize: 30 }}>
-          {formatCurrency(total)}
-        </p>
-        <p className="bm-summary-label">All savings categories</p>
-      </Card>
+      <header className="bm-total-head" style={{ marginBottom: 16 }}>
+        <p className="bm-caption">Total saved</p>
+        <h1 className="bm-display num">{formatCurrency(total)}</h1>
+        <p className="bm-caption">Across every goal</p>
+      </header>
 
-      <h2 className="bm-section-title">My Savings Goals</h2>
+      <Link to="/savings/new" className="bm-add-cta bm-press" style={{ marginBottom: 18 }}>
+        <span className="bm-add-cta-plus" aria-hidden="true">
+          +
+        </span>
+        Add savings goal
+      </Link>
+
+      <h2 className="bm-section-heading">My savings goals</h2>
       {categories.length === 0 ? (
         <EmptyState message="Start your first savings goal." />
       ) : (
