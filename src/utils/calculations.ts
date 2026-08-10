@@ -160,3 +160,87 @@ export function validateSavingsDeposit(amount: Centavos): SavingsTxValidation {
   if (amount <= 0) return { valid: false, error: 'Enter an amount greater than zero.' }
   return { valid: true }
 }
+
+// ---------------------------------------------------------------------------
+// Per-bank totals
+// ---------------------------------------------------------------------------
+
+export type AccountFlowKind = 'outgoing' | 'savings' | 'both'
+
+export interface AccountTotalsInput {
+  id: string
+  flow: AccountFlowKind
+}
+
+export interface TaggedAmount {
+  accountId: string | null
+  amount: Centavos
+}
+
+export interface AccountTotals {
+  id: string
+  /** Money that left this account: expenses paid from it, transfers out of it. */
+  out: Centavos
+  /** Money that arrived: income landing in it, transfers into it. */
+  in: Centavos
+  /**
+   * The single number the bank row shows.
+   *
+   * An outgoing account reports what it cost you; a savings account reports
+   * what you put away. These mean opposite things, so the UI must never sum
+   * this column across accounts of different flows, and neither should we.
+   */
+  headline: Centavos
+  headlineIsSpending: boolean
+}
+
+export interface TransferLeg {
+  fromAccountId: string | null
+  toAccountId: string | null
+  amount: Centavos
+}
+
+/**
+ * Rolls month entries up per bank.
+ *
+ * Entries with no account are skipped rather than bucketed into an "unknown"
+ * row: tagging is optional, and an untagged jeepney fare should not create a
+ * phantom bank. Those amounts still count in every overall total, they just do
+ * not claim to have come from anywhere in particular.
+ */
+export function calculateAccountTotals(
+  accounts: AccountTotalsInput[],
+  expenses: TaggedAmount[],
+  income: TaggedAmount[],
+  transfers: TransferLeg[] = [],
+): AccountTotals[] {
+  const out = new Map<string, Centavos>()
+  const inflow = new Map<string, Centavos>()
+
+  const bump = (map: Map<string, Centavos>, id: string | null, amount: Centavos) => {
+    if (!id) return
+    map.set(id, (map.get(id) ?? 0) + amount)
+  }
+
+  for (const e of expenses) bump(out, e.accountId, e.amount)
+  for (const i of income) bump(inflow, i.accountId, i.amount)
+  for (const t of transfers) {
+    bump(out, t.fromAccountId, t.amount)
+    bump(inflow, t.toAccountId, t.amount)
+  }
+
+  return accounts.map((account) => {
+    const spent = out.get(account.id) ?? 0
+    const received = inflow.get(account.id) ?? 0
+    // "both" reports spending, because that is the question people actually
+    // ask of a wallet they spend from.
+    const headlineIsSpending = account.flow !== 'savings'
+    return {
+      id: account.id,
+      out: spent,
+      in: received,
+      headline: headlineIsSpending ? spent : received,
+      headlineIsSpending,
+    }
+  })
+}

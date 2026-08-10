@@ -148,3 +148,56 @@ export function getPhilippineMonthRange(yearMonth: string): { start: IsoDate; en
 export function getCurrentPhilippineMonth(referenceDate: Date = new Date()): string {
   return getPhilippineToday(referenceDate).slice(0, 7)
 }
+
+/**
+ * "August 2026" for a "YYYY-MM" string.
+ *
+ * Built at midday UTC on the first of the month so the +8 shift can never roll
+ * the label back into the previous month, which is the classic way a month
+ * header ends up one behind the data under it.
+ */
+export function philippineMonthLabel(yearMonth: string): string {
+  const [y, m] = yearMonth.split('-').map(Number)
+  const dt = new Date(Date.UTC(y, m - 1, 1, 12))
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: APP_TIMEZONE,
+    month: 'long',
+    year: 'numeric',
+  }).format(dt)
+}
+
+/** "August" without the year, for a month header that already shows the year. */
+export function philippineMonthNameOnly(yearMonth: string): string {
+  const [y, m] = yearMonth.split('-').map(Number)
+  const dt = new Date(Date.UTC(y, m - 1, 1, 12))
+  return new Intl.DateTimeFormat('en-US', { timeZone: APP_TIMEZONE, month: 'long' }).format(dt)
+}
+
+/** Shifts a "YYYY-MM" string by whole months, wrapping the year correctly. */
+export function shiftMonth(yearMonth: string, delta: number): string {
+  const [y, m] = yearMonth.split('-').map(Number)
+  const zero = y * 12 + (m - 1) + delta
+  const year = Math.floor(zero / 12)
+  const month = zero - year * 12 + 1
+  return `${year}-${String(month).padStart(2, '0')}`
+}
+
+/**
+ * "Today", "Yesterday", or "Sat, 8 Aug" for grouping a list of entries.
+ * Anything in another year keeps the year so old rows are never ambiguous.
+ */
+export function relativeDayLabel(date: IsoDate, today: IsoDate = getPhilippineToday()): string {
+  if (date === today) return 'Today'
+  if (date === addDaysToIsoDate(today, -1)) return 'Yesterday'
+  if (date === addDaysToIsoDate(today, 1)) return 'Tomorrow'
+  const [y, m, d] = date.split('-').map(Number)
+  const dt = new Date(Date.UTC(y, m - 1, d, 12))
+  const sameYear = date.slice(0, 4) === today.slice(0, 4)
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: APP_TIMEZONE,
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    ...(sameYear ? {} : { year: 'numeric' }),
+  }).format(dt)
+}
