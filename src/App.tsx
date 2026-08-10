@@ -25,6 +25,9 @@ import { ExpensesPage } from '@/pages/finance/ExpensesPage'
 import { AddExpensePage } from '@/pages/finance/AddExpensePage'
 import { BudgetPage } from '@/pages/finance/BudgetPage'
 import { CategoriesPage } from '@/pages/finance/CategoriesPage'
+import { TransfersPage } from '@/pages/finance/TransfersPage'
+import { AddTransferPage } from '@/pages/finance/AddTransferPage'
+import { EditSectionPage } from '@/pages/finance/EditSectionPage'
 
 import { SavingsOverviewPage } from '@/pages/savings/SavingsOverviewPage'
 import { AddSavingsCategoryPage } from '@/pages/savings/AddSavingsCategoryPage'
@@ -97,6 +100,17 @@ function App() {
         <Route path="/finance/expenses" element={<ExpensesPage />} />
         <Route path="/finance/expense/new" element={<AddExpensePage />} />
         <Route path="/finance/budget" element={<BudgetPage />} />
+        <Route path="/finance/transfers" element={<TransfersPage />} />
+        <Route path="/finance/transfers/new" element={<AddTransferPage />} />
+
+        {/*
+          One edit screen per section, reached from the Edit button inside it.
+          Declared after the concrete /finance/* routes above so those keep
+          priority, and kept as a param so all five stay identical.
+        */}
+        <Route path="/finance/:section/edit" element={<EditSectionPage />} />
+
+        {/* Kept so old bookmarks and the previous nav still land somewhere. */}
         <Route path="/finance/categories" element={<CategoriesPage />} />
 
         <Route path="/savings" element={<SavingsOverviewPage />} />
