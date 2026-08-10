@@ -14,15 +14,18 @@ export default defineConfig({
       injectManifest: {
         swSrc: 'src/sw.ts',
         swDest: 'dist/sw.js',
+        // woff2 is not in Workbox's default glob. Without it the app opens
+        // offline in a fallback font, which on the peso sign looks broken.
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,woff2}'],
       },
       includeAssets: ['icons/favicon.svg'],
       manifest: {
         id: '/',
         name: 'Better Me',
         short_name: 'Better Me',
-        description: 'Habits, gym, and finances in one private, premium tracker.',
-        theme_color: '#021D18',
-        background_color: '#021D18',
+        description: 'Habits, gym, and finances in one private tracker.',
+        theme_color: '#F4F4F2',
+        background_color: '#F4F4F2',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
