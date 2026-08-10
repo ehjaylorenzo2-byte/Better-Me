@@ -120,6 +120,37 @@ export interface FinanceAccount {
   isBuiltin: boolean
   archived: boolean
   sortOrder: number
+  /** What the account held before anything was logged. Zero for everyone today. */
+  startingBalance: Centavos
+}
+
+/** An account with its current balance, as computed by the database. */
+export interface AccountWithBalance extends FinanceAccount {
+  balance: Centavos
+}
+
+/**
+ * One row in the Recent list.
+ *
+ * Five different tables feed this, so it is flattened to a common shape rather
+ * than making the list component understand all five.
+ */
+export type MovementKind = 'income' | 'expense' | 'transfer' | 'savings' | 'debt'
+
+export interface Movement {
+  id: string
+  kind: MovementKind
+  /** What the row is called: a category, a bank pair, a goal, a debt. */
+  title: string
+  subtitle: string | null
+  amount: Centavos
+  /** in raises Total Balance, out lowers it, moved leaves it alone. */
+  direction: 'in' | 'out' | 'moved'
+  entryDate: IsoDate
+  /** Sorts rows logged on the same day in the order they were entered. */
+  createdAt: string
+  color: string | null
+  icon: string
 }
 
 /**
@@ -153,6 +184,8 @@ export interface SavingsCategory {
   balance: Centavos
   color: string
   icon: string
+  /** The bank this goal is held in. Null only for goals created before wallets. */
+  accountId: string | null
   createdAt: string
 }
 
@@ -163,6 +196,8 @@ export interface SavingsTransaction {
   type: 'deposit' | 'withdrawal'
   amount: Centavos
   note: string | null
+  /** The bank on the far side: funded a deposit, or received a withdrawal. */
+  counterAccountId: string | null
   createdAt: string
 }
 
@@ -184,6 +219,9 @@ export interface DebtPayment {
   userId: string
   amount: Centavos
   note: string | null
+  /** The bank the payment came out of. */
+  accountId: string | null
+  entryDate: IsoDate
   createdAt: string
 }
 

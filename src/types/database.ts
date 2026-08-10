@@ -263,6 +263,7 @@ export interface Database {
           balance_centavos: number
           color: string
           icon: string
+          account_id: string | null
           created_at: string
         }
         Insert: {
@@ -273,8 +274,15 @@ export interface Database {
           balance_centavos?: number
           color?: string
           icon?: string
+          account_id?: string | null
         }
-        Update: Partial<{ name: string; goal_amount_centavos: number | null; color: string; icon: string }>
+        Update: Partial<{
+          name: string
+          goal_amount_centavos: number | null
+          color: string
+          icon: string
+          account_id: string | null
+        }>
         Relationships: never[]
       }
       savings_transactions: {
@@ -285,6 +293,7 @@ export interface Database {
           type: 'deposit' | 'withdrawal'
           amount_centavos: number
           note: string | null
+          counter_account_id: string | null
           created_at: string
         }
         Insert: {
@@ -294,6 +303,7 @@ export interface Database {
           type: 'deposit' | 'withdrawal'
           amount_centavos: number
           note?: string | null
+          counter_account_id?: string | null
         }
         Update: never
         Relationships: never[]
@@ -329,6 +339,8 @@ export interface Database {
           user_id: string
           amount_centavos: number
           note: string | null
+          account_id: string | null
+          entry_date: string
           created_at: string
         }
         Insert: {
@@ -337,6 +349,8 @@ export interface Database {
           user_id: string
           amount_centavos: number
           note?: string | null
+          account_id?: string | null
+          entry_date?: string
         }
         Update: never
         Relationships: never[]
@@ -352,6 +366,7 @@ export interface Database {
           is_builtin: boolean
           archived: boolean
           sort_order: number
+          starting_balance_centavos: number
           created_at: string
         }
         Insert: {
@@ -364,6 +379,7 @@ export interface Database {
           is_builtin?: boolean
           archived?: boolean
           sort_order?: number
+          starting_balance_centavos?: number
         }
         Update: Partial<{
           name: string
@@ -372,6 +388,7 @@ export interface Database {
           icon: string
           archived: boolean
           sort_order: number
+          starting_balance_centavos: number
         }>
         Relationships: never[]
       }
@@ -458,13 +475,33 @@ export interface Database {
         Relationships: never[]
       }
     }
-    Views: Record<string, never>
+    Views: {
+      /**
+       * One balance per account, derived in the database from the entries
+       * themselves rather than stored on the account. A stored balance has to be
+       * kept in step by every write path and drifts the first time one is missed.
+       */
+      finance_account_balances: {
+        Row: {
+          id: string
+          user_id: string
+          balance_centavos: number
+        }
+        Relationships: never[]
+      }
+    }
     Functions: {
       is_username_available: { Args: { p_username: string }; Returns: boolean }
       ensure_default_finance_categories: { Args: Record<string, never>; Returns: undefined }
       ensure_default_finance_accounts: { Args: Record<string, never>; Returns: undefined }
       record_debt_payment: {
-        Args: { p_debt_id: string; p_amount_centavos: number; p_note?: string | null }
+        Args: {
+          p_debt_id: string
+          p_amount_centavos: number
+          p_note?: string | null
+          p_account_id?: string | null
+          p_entry_date?: string | null
+        }
         Returns: Database['public']['Tables']['debts']['Row']
       }
       record_savings_transaction: {
@@ -473,6 +510,7 @@ export interface Database {
           p_type: 'deposit' | 'withdrawal'
           p_amount_centavos: number
           p_note?: string | null
+          p_counter_account_id?: string | null
         }
         Returns: Database['public']['Tables']['savings_categories']['Row']
       }
