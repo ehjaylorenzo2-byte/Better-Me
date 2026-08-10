@@ -10,6 +10,7 @@ export interface Database {
           id: string
           username: string
           username_normalized: string
+          display_name: string | null
           avatar_url: string | null
           created_at: string
         }
@@ -17,10 +18,16 @@ export interface Database {
           id: string
           username: string
           username_normalized: string
+          display_name?: string | null
           avatar_url?: string | null
           created_at?: string
         }
-        Update: Partial<{ username: string; username_normalized: string; avatar_url: string | null }>
+        Update: Partial<{
+          username: string
+          username_normalized: string
+          display_name: string | null
+          avatar_url: string | null
+        }>
         Relationships: never[]
       }
       user_preferences: {
