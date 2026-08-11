@@ -261,14 +261,6 @@
   .bm-breakdown-fill { animation: none; }
 }
 
-.bm-bank-amount.out {
-  color: var(--money-out-text);
-}
-
-.bm-bank-amount.in {
-  color: var(--accent-text);
-}
-
 /* ---- Savings and debt pair ----------------------------------------------- */
 .bm-summary-pair {
   display: grid;
@@ -491,12 +483,6 @@
 }
 
 /* ---- Forms shared across finance ----------------------------------------- */
-.bm-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
 .bm-entry-meta {
   font-size: 12px;
   color: var(--text-secondary);
@@ -559,4 +545,146 @@
   min-height: 56px;
   display: flex;
   align-items: center;
+}
+
+/* ---- The four figures ------------------------------------------------------
+   One block, four numbers, each one a way in to its own screen. Grouping them
+   means the whole month reads in a single glance instead of three cards. */
+.bm-figures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-soft);
+}
+
+.bm-figure {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 14px 16px;
+  background: var(--surface);
+  color: var(--text-primary);
+  min-height: 68px;
+}
+
+.bm-figure-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.bm-figure-value {
+  font-family: var(--font-medium);
+  font-size: 17px;
+}
+
+.bm-figure-value.in {
+  color: var(--accent-text);
+}
+
+.bm-figure-value.out {
+  color: var(--money-out-text);
+}
+
+/* ---- Wallets --------------------------------------------------------------- */
+.bm-wallets {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bm-wallet {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bm-wallet-name {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-medium);
+  font-size: 14.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bm-wallet-balance {
+  font-family: var(--font-medium);
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+/* A wallet below zero is information, not an error, so it is coloured rather
+   than hidden or clamped. */
+.bm-wallet-balance.negative {
+  color: var(--money-out-text);
+}
+
+.bm-wallet-warning {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* ---- Recent ---------------------------------------------------------------- */
+.bm-recent {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bm-recent-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bm-recent-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.bm-recent-title {
+  font-family: var(--font-medium);
+  font-size: 14.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bm-recent-sub {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bm-recent-amount {
+  font-family: var(--font-medium);
+  font-size: 14.5px;
+  flex-shrink: 0;
+}
+
+.bm-recent-amount.in {
+  color: var(--accent-text);
+}
+
+.bm-recent-amount.out {
+  color: var(--money-out-text);
+}
+
+/* Moved money gets no sign and no colour, because it did not change anything. */
+.bm-recent-amount.moved {
+  color: var(--text-secondary);
 }
