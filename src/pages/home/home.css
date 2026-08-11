@@ -160,15 +160,15 @@
   stroke: var(--ink);
 }
 
-.bm-ring-fraction {
-  font-family: var(--font-bold);
+.bm-hero .bm-ring-fraction {
   font-size: 19px;
   color: var(--ink);
 }
 
-.bm-ring-fraction span {
+.bm-hero .bm-ring-fraction span {
   font-family: var(--font-regular);
   font-size: 12px;
+  color: inherit;
   opacity: 0.6;
 }
 
