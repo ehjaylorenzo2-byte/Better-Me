@@ -1,7 +1,22 @@
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { BottomSheet } from '@/components/ui/Sheet'
 import './bottom-nav.css'
+
+/**
+ * Anything under Finance, plus the two screens that are finance in all but URL.
+ * Used to decide what the plus button does.
+ */
+function isFinanceRoute(pathname: string): boolean {
+  return (
+    pathname === '/finance' ||
+    pathname.startsWith('/finance/') ||
+    pathname === '/savings' ||
+    pathname.startsWith('/savings/') ||
+    pathname === '/debt' ||
+    pathname.startsWith('/debt/')
+  )
+}
 
 const NAV_ITEMS = [
   { to: '/', label: 'Home', icon: HomeIcon },
@@ -10,13 +25,27 @@ const NAV_ITEMS = [
   { to: '/profile', label: 'Profile', icon: ProfileIcon },
 ]
 
-export function BottomNav() {
+export function BottomNav({ onAddTransaction }: { onAddTransaction?: () => void }) {
   const [addOpen, setAddOpen] = useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
 
   const goTo = (path: string) => {
     setAddOpen(false)
     navigate(path)
+  }
+
+  /*
+    Inside Finance the plus is a money button and goes straight to the
+    transaction sheet. Everywhere else it stays the general add menu, because
+    from the Habits screen a keypad would be the wrong thing entirely.
+  */
+  const onPlus = () => {
+    if (onAddTransaction && isFinanceRoute(location.pathname)) {
+      onAddTransaction()
+      return
+    }
+    setAddOpen(true)
   }
 
   return (
@@ -31,7 +60,7 @@ export function BottomNav() {
         <button
           type="button"
           className="bm-nav-add"
-          onClick={() => setAddOpen(true)}
+          onClick={onPlus}
           aria-label="Add"
           aria-haspopup="dialog"
         >
@@ -58,12 +87,6 @@ export function BottomNav() {
           </button>
           <button className="bm-add-option" onClick={() => goTo('/finance/expense/new')}>
             Add Expense
-          </button>
-          <button className="bm-add-option" onClick={() => goTo('/savings/new')}>
-            Add Savings
-          </button>
-          <button className="bm-add-option" onClick={() => goTo('/debt/new')}>
-            Add Debt
           </button>
         </div>
       </BottomSheet>
