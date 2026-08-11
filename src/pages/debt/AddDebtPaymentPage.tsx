@@ -7,9 +7,13 @@ import { Button } from '@/components/ui/Button'
 import { LoadingState } from '@/components/ui/States'
 import { useToast } from '@/components/ui/Toast'
 import { listDebts, recordDebtPayment } from '@/services/debt'
+import { AccountPicker } from '@/components/finance/AccountPicker'
+import { ensureDefaultAccounts, listAccounts } from '@/services/accounts'
 import { validateDebtPayment } from '@/utils/calculations'
 import { formatCurrency, isValidMoneyInput, pesoToCentavos } from '@/utils/money'
-import type { Debt } from '@/types/models'
+import { getPhilippineToday } from '@/utils/timezone'
+import type { Debt, FinanceAccount } from '@/types/models'
+import '../finance/finance.css'
 
 export function AddDebtPaymentPage() {
   const { debtId } = useParams()
@@ -19,15 +23,33 @@ export function AddDebtPaymentPage() {
   const [debt, setDebt] = useState<Debt | null>(null)
   const [amount, setAmount] = useState('')
   const [note, setNote] = useState('')
+  const [accounts, setAccounts] = useState<FinanceAccount[]>([])
+  const [accountId, setAccountId] = useState<string | null>(null)
+  const [date, setDate] = useState(getPhilippineToday())
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!userId || !debtId) return
-    listDebts(userId)
-      .then((debts) => setDebt(debts.find((d) => d.id === debtId) ?? null))
-      .finally(() => setLoading(false))
+    let active = true
+    ;(async () => {
+      await ensureDefaultAccounts()
+      const [debts, accs] = await Promise.all([listDebts(userId), listAccounts(userId)])
+      if (!active) return
+      setDebt(debts.find((d) => d.id === debtId) ?? null)
+      setAccounts(accs)
+      setAccountId((current) => current ?? accs[0]?.id ?? null)
+    })()
+      .catch(() => {
+        if (active) setError('Could not load this debt.')
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
   }, [userId, debtId])
 
   if (loading) return <LoadingState />
@@ -48,7 +70,7 @@ export function AddDebtPaymentPage() {
     setSaving(true)
     setError(null)
     try {
-      await recordDebtPayment(debt.id, centavos, note || null)
+      await recordDebtPayment(debt.id, centavos, note || null, accountId, date)
       show('Payment recorded.', 'success')
       navigate(`/debt/${debt.id}`)
     } catch (err) {
@@ -67,10 +89,27 @@ export function AddDebtPaymentPage() {
           Remaining balance: {formatCurrency(debt.balance)}
         </p>
         <CurrencyInput label="Payment amount" value={amount} onChange={setAmount} />
+
+        <AccountPicker
+          accounts={accounts}
+          value={accountId}
+          onChange={setAccountId}
+          label="Paid from"
+          allowNone={false}
+          emptyHint="Add a bank first, under Edit on the Finance screen."
+        />
+
+        <Input label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         <Input label="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
+
         <Button type="submit" fullWidth loading={saving}>
           Record Payment
         </Button>
+
+        <p className="bm-form-footnote">
+          This comes out of the bank you picked and counts as spending this month, so it also goes
+          against your budget.
+        </p>
       </form>
     </div>
   )
