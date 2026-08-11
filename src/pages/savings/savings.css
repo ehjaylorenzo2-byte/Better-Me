@@ -56,3 +56,10 @@
   color: var(--accent-contrast);
   border-color: transparent;
 }
+
+/* A goal created before banks existed. Flagged rather than hidden, because
+   money in an unlinked goal never reaches a wallet. */
+.bm-savings-nobank {
+  color: var(--warning);
+  font-family: var(--font-medium);
+}

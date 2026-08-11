@@ -6,9 +6,10 @@ import { ProgressBar } from '@/components/ui/Progress'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/States'
 import { listSavingsCategories } from '@/services/savings'
+import { buildAccountLookup, listAccountsWithBalances } from '@/services/accounts'
 import { calculateSavingsProgress, calculateTotalSavings } from '@/utils/calculations'
 import { formatCurrency } from '@/utils/money'
-import type { SavingsCategory } from '@/types/models'
+import type { AccountWithBalance, SavingsCategory } from '@/types/models'
 import '../finance/finance.css'
 import './savings.css'
 
@@ -16,15 +17,23 @@ export function SavingsOverviewPage() {
   const { userId } = useAuth()
   const navigate = useNavigate()
   const [categories, setCategories] = useState<SavingsCategory[]>([])
+  const [accounts, setAccounts] = useState<AccountWithBalance[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const lookup = buildAccountLookup(accounts) as Map<string, AccountWithBalance>
 
   const load = async () => {
     if (!userId) return
     setLoading(true)
     setError(null)
     try {
-      setCategories(await listSavingsCategories(userId))
+      const [cats, accs] = await Promise.all([
+        listSavingsCategories(userId),
+        listAccountsWithBalances(userId, { includeArchived: true }),
+      ])
+      setCategories(cats)
+      setAccounts(accs)
     } catch {
       setError('Could not load savings.')
     } finally {
@@ -67,20 +76,42 @@ export function SavingsOverviewPage() {
       </Link>
 
       <h2 className="bm-section-heading">My savings goals</h2>
+      {categories.some((c) => !c.accountId) ? (
+        <p className="bm-section-note" style={{ marginBottom: 12 }}>
+          Some goals were created before banks existed and are not linked to one yet. Open a goal
+          and set its bank so the money shows up in the right wallet.
+        </p>
+      ) : null}
       {categories.length === 0 ? (
         <EmptyState message="Start your first savings goal." />
       ) : (
         <ul className="bm-savings-list">
           {categories.map((cat) => {
             const progress = calculateSavingsProgress(cat.balance, cat.goalAmount)
+            const bank = cat.accountId ? lookup.get(cat.accountId) : null
+            // The bank can hold more than the goal, and that is not an error.
+            // Showing both beats picking one and being quietly wrong.
+            const bankHoldsMore = bank ? bank.balance !== cat.balance : false
             return (
               <li key={cat.id}>
                 <Link to={`/savings/${cat.id}`}>
                   <Card className="bm-savings-item">
                     <div className="bm-entry-row">
-                      <span style={{ fontWeight: 700 }}>{cat.name}</span>
+                      <span style={{ fontFamily: 'var(--font-medium)' }}>{cat.name}</span>
                       <span className="bm-entry-amount">{formatCurrency(cat.balance)}</span>
                     </div>
+
+                    <p className="bm-entry-meta">
+                      {bank ? (
+                        <>
+                          Held in {bank.name}
+                          {bankHoldsMore ? ` · that bank holds ${formatCurrency(bank.balance)}` : null}
+                        </>
+                      ) : (
+                        <span className="bm-savings-nobank">Not linked to a bank yet</span>
+                      )}
+                    </p>
+
                     {cat.goalAmount ? (
                       <>
                         <ProgressBar value={progress ?? 0} />
@@ -89,7 +120,7 @@ export function SavingsOverviewPage() {
                         </p>
                       </>
                     ) : (
-                      <p className="bm-entry-meta">No goal set</p>
+                      <p className="bm-entry-meta">No target set</p>
                     )}
                   </Card>
                 </Link>
