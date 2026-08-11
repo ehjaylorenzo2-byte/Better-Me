@@ -115,12 +115,6 @@
   color: var(--text-secondary);
 }
 
-.bm-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
 .bm-weekday-picker {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
