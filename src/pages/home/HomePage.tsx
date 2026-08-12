@@ -66,6 +66,11 @@ export function HomePage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   // How blunt the daily line is allowed to be. Chosen under Profile.
   const [tone, setTone] = useState<MotivationTone>('balanced')
+  // Optional cards the person has switched off under Profile > Home screen.
+  // The greeting, today's progress and today's schedule are not in here on
+  // purpose: hiding those would leave Home with nothing to say.
+  const [hiddenCards, setHiddenCards] = useState<string[]>([])
+  const shows = (card: string) => !hiddenCards.includes(card)
 
   const load = async () => {
     if (!userId) return
@@ -86,6 +91,7 @@ export function HomePage() {
       setWeekRows(weekData)
       setAvatarUrl(avatar)
       setTone(prefs.motivationTone)
+      setHiddenCards(prefs.hiddenHomeCards)
 
       if (budget) {
         const spent = expenses.reduce((sum, e) => sum + e.amount, 0)
@@ -150,7 +156,7 @@ export function HomePage() {
         </Link>
       </header>
 
-      <p className="bm-home-motivation bm-enter">{motivation}</p>
+      {shows('motivation') ? <p className="bm-home-motivation bm-enter">{motivation}</p> : null}
 
       {/* ---- Hero: today's progress ---- */}
       <section className="bm-hero bm-lift bm-enter">
@@ -184,31 +190,37 @@ export function HomePage() {
           />
         </div>
 
-        <Link
-          to="/finance/budget"
-          className={`bm-hero-pill bm-press ${overBudget ? 'over' : ''}`}
-        >
-          <span className="bm-hero-pill-dot" />
-          {budgetLine}
-          <ChevronIcon />
-        </Link>
+        {shows('budget') ? (
+          <Link
+            to="/finance/budget"
+            className={`bm-hero-pill bm-press ${overBudget ? 'over' : ''}`}
+          >
+            <span className="bm-hero-pill-dot" />
+            {budgetLine}
+            <ChevronIcon />
+          </Link>
+        ) : null}
       </section>
 
       {/* ---- Quick actions ---- */}
-      <section className="bm-quick bm-stagger">
-        <QuickAction label="Add Habit" icon="star" onClick={() => navigate('/habits/new')} />
-        <QuickAction label="Expense" icon="wallet" onClick={() => navigate('/finance/expense/new')} />
-        <QuickAction label="Transfer" icon="repeat" onClick={() => navigate('/finance/transfers/new')} />
-        <QuickAction label="Gym" icon="dumbbell" onClick={() => navigate('/gym')} />
-      </section>
+      {shows('quick') ? (
+        <section className="bm-quick bm-stagger">
+          <QuickAction label="Add Habit" icon="star" onClick={() => navigate('/habits/new')} />
+          <QuickAction label="Expense" icon="wallet" onClick={() => navigate('/finance/expense/new')} />
+          <QuickAction label="Transfer" icon="repeat" onClick={() => navigate('/finance/transfers/new')} />
+          <QuickAction label="Gym" icon="dumbbell" onClick={() => navigate('/gym')} />
+        </section>
+      ) : null}
 
       {/* ---- Stat strip ---- */}
-      <section className="bm-stats bm-stagger">
-        <StatTile label="Done" value={todayProgress.done} tone="success" />
-        <StatTile label="Skipped" value={todayProgress.skipped} tone="warning" />
-        <StatTile label="Left" value={todayProgress.noStatus} />
-        <StatTile label="This week" value={`${Math.round(weekProgress.scheduledCompletionRate)}%`} tone="accent" />
-      </section>
+      {shows('stats') ? (
+        <section className="bm-stats bm-stagger">
+          <StatTile label="Done" value={todayProgress.done} tone="success" />
+          <StatTile label="Skipped" value={todayProgress.skipped} tone="warning" />
+          <StatTile label="Left" value={todayProgress.noStatus} />
+          <StatTile label="This week" value={`${Math.round(weekProgress.scheduledCompletionRate)}%`} tone="accent" />
+        </section>
+      ) : null}
 
       {/* ---- Today's schedule ---- */}
       <section className="bm-section">
