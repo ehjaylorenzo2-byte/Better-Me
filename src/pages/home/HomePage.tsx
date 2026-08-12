@@ -9,6 +9,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/ui/States'
 import { getOccurrencesInRange } from '@/services/habits'
 import { getBudgetForMonth, listExpensesForMonth } from '@/services/finance'
 import { getAvatarUrl } from '@/services/avatar'
+import { getUserPreferences } from '@/services/preferences'
 import { chipVarsForLabel } from '@/theme/categoryStyles'
 import {
   addDaysToIsoDate,
@@ -20,7 +21,7 @@ import {
 import { calculateDailyProgress, calculateBudgetRemaining } from '@/utils/calculations'
 import { formatCurrency } from '@/utils/money'
 import { getMotivationMessage } from '@/utils/motivation'
-import type { HabitOccurrence, Habit, HabitSchedule } from '@/types/models'
+import type { HabitOccurrence, Habit, HabitSchedule, MotivationTone } from '@/types/models'
 import './home.css'
 
 type Row = HabitOccurrence & { habit: Habit; schedule: HabitSchedule }
@@ -63,6 +64,8 @@ export function HomePage() {
   const [budgetLine, setBudgetLine] = useState<string | null>(null)
   const [overBudget, setOverBudget] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  // How blunt the daily line is allowed to be. Chosen under Profile.
+  const [tone, setTone] = useState<MotivationTone>('balanced')
 
   const load = async () => {
     if (!userId) return
@@ -70,17 +73,19 @@ export function HomePage() {
     setError(null)
     try {
       const weekStart = startOfWeek(today)
-      const [todayData, weekData, budget, expenses, avatar] = await Promise.all([
+      const [todayData, weekData, budget, expenses, avatar, prefs] = await Promise.all([
         getOccurrencesInRange(userId, today, today),
         getOccurrencesInRange(userId, weekStart, addDaysToIsoDate(weekStart, 6)),
         getBudgetForMonth(userId, getCurrentPhilippineMonth()),
         listExpensesForMonth(userId, getCurrentPhilippineMonth()),
         getAvatarUrl(userId),
+        getUserPreferences(userId),
       ])
 
       setTodayRows(todayData)
       setWeekRows(weekData)
       setAvatarUrl(avatar)
+      setTone(prefs.motivationTone)
 
       if (budget) {
         const spent = expenses.reduce((sum, e) => sum + e.amount, 0)
@@ -110,8 +115,8 @@ export function HomePage() {
   const todayProgress = useMemo(() => calculateDailyProgress(todayRows.map((r) => r.status)), [todayRows])
   const weekProgress = useMemo(() => calculateDailyProgress(weekRows.map((r) => r.status)), [weekRows])
   const motivation = useMemo(
-    () => getMotivationMessage(todayProgress, today.split('-').reduce((a, n) => a + Number(n), 0)),
-    [todayProgress, today],
+    () => getMotivationMessage(todayProgress, today.split('-').reduce((a, n) => a + Number(n), 0), tone),
+    [todayProgress, today, tone],
   )
 
   const pct = Math.round(todayProgress.scheduledCompletionRate)
