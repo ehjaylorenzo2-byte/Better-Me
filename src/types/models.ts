@@ -5,6 +5,11 @@ export type HabitStatus = 'done' | 'skipped' | 'cancelled'
 export type Recurrence = 'once' | 'daily' | 'weekly' | 'monthly' | 'custom'
 export type ThemePreference = 'light' | 'dark' | 'system'
 
+/** How blunt the daily message is allowed to get. */
+export type MotivationTone = 'encourage' | 'balanced' | 'roast' | 'brutal'
+
+export type TextSize = 'small' | 'medium' | 'large'
+
 export interface Profile {
   id: string
   username: string

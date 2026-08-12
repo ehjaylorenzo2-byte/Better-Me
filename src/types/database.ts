@@ -12,6 +12,8 @@ export interface Database {
           username_normalized: string
           display_name: string | null
           avatar_url: string | null
+          // Optional, and never the internal auth alias. Added in 0006.
+          recovery_email: string | null
           created_at: string
         }
         Insert: {
@@ -20,6 +22,7 @@ export interface Database {
           username_normalized: string
           display_name?: string | null
           avatar_url?: string | null
+          recovery_email?: string | null
           created_at?: string
         }
         Update: Partial<{
@@ -27,13 +30,39 @@ export interface Database {
           username_normalized: string
           display_name: string | null
           avatar_url: string | null
+          recovery_email: string | null
         }>
         Relationships: never[]
       }
       user_preferences: {
-        Row: { user_id: string; theme: 'light' | 'dark' | 'system'; timezone: string; updated_at: string }
-        Insert: { user_id: string; theme?: 'light' | 'dark' | 'system'; timezone?: string }
-        Update: Partial<{ theme: 'light' | 'dark' | 'system'; timezone: string }>
+        Row: {
+          user_id: string
+          theme: 'light' | 'dark' | 'system'
+          timezone: string
+          motivation_tone: 'encourage' | 'balanced' | 'roast' | 'brutal'
+          text_size: 'small' | 'medium' | 'large'
+          /** 0 = Sunday, 1 = Monday. */
+          week_starts_on: 0 | 1
+          hidden_home_cards: string[]
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          theme?: 'light' | 'dark' | 'system'
+          timezone?: string
+          motivation_tone?: 'encourage' | 'balanced' | 'roast' | 'brutal'
+          text_size?: 'small' | 'medium' | 'large'
+          week_starts_on?: 0 | 1
+          hidden_home_cards?: string[]
+        }
+        Update: Partial<{
+          theme: 'light' | 'dark' | 'system'
+          timezone: string
+          motivation_tone: 'encourage' | 'balanced' | 'roast' | 'brutal'
+          text_size: 'small' | 'medium' | 'large'
+          week_starts_on: 0 | 1
+          hidden_home_cards: string[]
+        }>
         Relationships: never[]
       }
       notification_preferences: {
@@ -42,6 +71,8 @@ export interface Database {
           reminders_enabled: boolean
           one_hour_reminder_enabled: boolean
           noon_summary_enabled: boolean
+          gym_reminders_enabled: boolean
+          finance_reminders_enabled: boolean
           updated_at: string
         }
         Insert: Partial<{
@@ -49,12 +80,35 @@ export interface Database {
           reminders_enabled: boolean
           one_hour_reminder_enabled: boolean
           noon_summary_enabled: boolean
+          gym_reminders_enabled: boolean
+          finance_reminders_enabled: boolean
         }>
         Update: Partial<{
           reminders_enabled: boolean
           one_hour_reminder_enabled: boolean
           noon_summary_enabled: boolean
+          gym_reminders_enabled: boolean
+          finance_reminders_enabled: boolean
         }>
+        Relationships: never[]
+      }
+      reminder_deliveries: {
+        Row: {
+          id: string
+          user_id: string
+          kind: 'one_hour' | 'noon_summary'
+          /** The habit occurrence for a one hour reminder; null for the summary. */
+          subject_id: string | null
+          occurrence_date: string
+          delivered_at: string
+        }
+        Insert: {
+          user_id: string
+          kind: 'one_hour' | 'noon_summary'
+          subject_id?: string | null
+          occurrence_date: string
+        }
+        Update: Partial<{ occurrence_date: string }>
         Relationships: never[]
       }
       habits: {
@@ -528,6 +582,26 @@ export interface Database {
         Args: { p_workout_id: string }
         Returns: Database['public']['Tables']['workouts']['Row']
       }
+      /**
+       * Undoes one month. Balances are reversed before the history is deleted,
+       * so a debt paid down 5,000 in the month goes back up by 5,000.
+       */
+      reset_this_month: {
+        Args: { p_month: string; p_include_budget?: boolean }
+        Returns: {
+          habits: number
+          workouts: number
+          income: number
+          expenses: number
+          transfers: number
+          savings: number
+          debtPayments: number
+        }
+      }
+      /** Clears the data, keeps the login. Separate from delete_my_account. */
+      reset_everything: { Args: Record<string, never>; Returns: undefined }
+      /** Removes the login itself, which cascades to everything else. */
+      delete_my_account: { Args: Record<string, never>; Returns: undefined }
     }
     Enums: Record<string, never>
   }
