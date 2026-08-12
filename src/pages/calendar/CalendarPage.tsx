@@ -5,11 +5,13 @@ import { LoadingState, ErrorState } from '@/components/ui/States'
 import { BottomSheet } from '@/components/ui/Sheet'
 import { SectionRow } from '@/components/ui/SectionRow'
 import { getOccurrencesInRange } from '@/services/habits'
+import { getUserPreferences } from '@/services/preferences'
 import {
   addDaysToIsoDate,
   formatIsoTime12h,
   getPhilippineToday,
-  isoDateWeekday,
+  leadingCellsForMonth,
+  orderWeekdays,
   philippineMonthNameOnly,
   relativeDayLabel,
   shiftMonth,
@@ -20,6 +22,7 @@ import './calendar.css'
 
 type Row = HabitOccurrence & { habit: Habit; schedule: HabitSchedule }
 
+/** Sunday first, matching JavaScript's day numbering. Rotated when the week starts on Monday. */
 const WEEKDAY_INITIALS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 
 export function CalendarPage() {
@@ -36,9 +39,14 @@ export function CalendarPage() {
 
   const touchStartX = useRef<number | null>(null)
 
+  // 0 = Sunday, 1 = Monday. Set under Profile > Home screen.
+  const [weekStartsOn, setWeekStartsOn] = useState<0 | 1>(0)
+
   const [year, month] = cursor.split('-').map(Number)
   const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate()
-  const firstWeekday = isoDateWeekday(`${cursor}-01`)
+  const firstWeekday = leadingCellsForMonth(cursor, weekStartsOn)
+
+  const weekdayInitials = useMemo(() => orderWeekdays(WEEKDAY_INITIALS, weekStartsOn), [weekStartsOn])
 
   const load = async () => {
     if (!userId) return
@@ -46,7 +54,12 @@ export function CalendarPage() {
     setError(null)
     try {
       const end = `${cursor}-${String(daysInMonth).padStart(2, '0')}`
-      setRows(await getOccurrencesInRange(userId, `${cursor}-01`, end))
+      const [occurrences, prefs] = await Promise.all([
+        getOccurrencesInRange(userId, `${cursor}-01`, end),
+        getUserPreferences(userId),
+      ])
+      setRows(occurrences)
+      setWeekStartsOn(prefs.weekStartsOn)
     } catch {
       setError('Could not load the calendar.')
     } finally {
@@ -162,7 +175,7 @@ export function CalendarPage() {
       ) : (
         <div className="bm-cal-card" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
           <div className="bm-cal-weekday-row">
-            {WEEKDAY_INITIALS.map((d, i) => (
+            {weekdayInitials.map((d, i) => (
               <span key={i}>{d}</span>
             ))}
           </div>
