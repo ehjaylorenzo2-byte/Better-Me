@@ -95,6 +95,22 @@ export function isoDateWeekday(date: IsoDate): number {
   return new Date(Date.UTC(y, m - 1, d, 12)).getUTCDay()
 }
 
+/**
+ * How many cells sit before the 1st in a month grid.
+ *
+ * The `+ 7) % 7` is load bearing. With a Monday start, a month beginning on a
+ * Sunday needs six leading cells, and a plain subtraction gives minus one,
+ * which silently collapses the first row of the calendar.
+ */
+export function leadingCellsForMonth(yearMonth: string, weekStartsOn: 0 | 1): number {
+  return (isoDateWeekday(`${yearMonth}-01`) - weekStartsOn + 7) % 7
+}
+
+/** Weekday headings rotated so the chosen first day comes first. */
+export function orderWeekdays<T>(labels: readonly T[], weekStartsOn: 0 | 1): T[] {
+  return [...labels.slice(weekStartsOn), ...labels.slice(0, weekStartsOn)]
+}
+
 export function compareIsoDate(a: IsoDate, b: IsoDate): number {
   return a < b ? -1 : a > b ? 1 : 0
 }
