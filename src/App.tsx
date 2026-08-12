@@ -46,6 +46,7 @@ import { SecuritySettingsPage } from '@/pages/profile/SecuritySettingsPage'
 import { AppLockSettingsPage } from '@/pages/profile/AppLockSettingsPage'
 import { MotivationSettingsPage } from '@/pages/profile/MotivationSettingsPage'
 import { DataSettingsPage } from '@/pages/profile/DataSettingsPage'
+import { HomeCardsSettingsPage } from '@/pages/profile/HomeCardsSettingsPage'
 
 function App() {
   return (
@@ -132,6 +133,7 @@ function App() {
         <Route path="/profile/app-lock" element={<AppLockSettingsPage />} />
         <Route path="/profile/motivation" element={<MotivationSettingsPage />} />
         <Route path="/profile/data" element={<DataSettingsPage />} />
+        <Route path="/profile/home-screen" element={<HomeCardsSettingsPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
