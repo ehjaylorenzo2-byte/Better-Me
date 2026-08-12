@@ -202,6 +202,8 @@ async function main() {
       ['savings', '/savings'],
       ['profile', '/profile'],
       ['profile-motivation', '/profile/motivation'],
+      ['profile-home-screen', '/profile/home-screen'],
+      ['profile-appearance', '/profile/appearance'],
       ['profile-data', '/profile/data'],
       ['profile-notifications', '/profile/notifications'],
       ['profile-security', '/profile/security'],
