@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { BottomSheet } from '@/components/ui/Sheet'
 import { CategoryIcon } from '@/components/CategoryIcon'
 import { useToast } from '@/components/ui/Toast'
 import { useAuth } from '@/features/auth/AuthContext'
+import { isOffline, OFFLINE_MESSAGE } from '@/hooks/useSubmitGuard'
 import { addExpense, addIncome } from '@/services/finance'
 import { addTransfer, validateTransfer } from '@/services/transfers'
 import { ensureDefaultAccounts, listAccounts } from '@/services/accounts'
@@ -56,6 +57,7 @@ export function AddTransactionSheet({
   const [showNote, setShowNote] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const inFlight = useRef(false)
 
   const amount: Centavos = digits === '' ? 0 : Number(digits)
 
@@ -120,6 +122,14 @@ export function AddTransactionSheet({
       setError('Enter an amount first.')
       return
     }
+    if (isOffline()) {
+      setError(OFFLINE_MESSAGE)
+      return
+    }
+    // A second tap while the first save is still in the air would post the
+    // same expense twice. The ref closes that window; `saving` only paints it.
+    if (inFlight.current) return
+    inFlight.current = true
 
     setSaving(true)
     setError(null)
@@ -159,6 +169,7 @@ export function AddTransactionSheet({
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save that.')
     } finally {
+      inFlight.current = false
       setSaving(false)
     }
   }
