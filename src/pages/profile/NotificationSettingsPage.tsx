@@ -26,11 +26,26 @@ export function NotificationSettingsPage() {
 
   if (loading || !prefs) return <LoadingState />
 
-  const toggle = async (key: keyof Pick<CombinedPreferences, 'remindersEnabled' | 'oneHourReminderEnabled' | 'noonSummaryEnabled'>) => {
+  type ToggleKey = keyof Pick<
+    CombinedPreferences,
+    | 'remindersEnabled'
+    | 'oneHourReminderEnabled'
+    | 'noonSummaryEnabled'
+    | 'gymRemindersEnabled'
+    | 'financeRemindersEnabled'
+  >
+
+  const toggle = async (key: ToggleKey) => {
     if (!userId) return
+    const previous = prefs
     const next = { ...prefs, [key]: !prefs[key] }
     setPrefs(next)
-    await updateNotificationPreferences(userId, { [key]: next[key] })
+    try {
+      await updateNotificationPreferences(userId, { [key]: next[key] })
+    } catch {
+      setPrefs(previous)
+      show('Could not save that. Try again.', 'error')
+    }
   }
 
   const onEnablePush = async () => {
@@ -76,23 +91,76 @@ export function NotificationSettingsPage() {
       </Card>
 
       <Card>
-        <ToggleRow label="Reminders enabled" value={prefs.remindersEnabled} onToggle={() => toggle('remindersEnabled')} />
         <ToggleRow
-          label="1 hour before reminder"
+          label="Send me reminders"
+          hint="The master switch. Off means nothing is sent at all."
+          value={prefs.remindersEnabled}
+          onToggle={() => toggle('remindersEnabled')}
+        />
+        <ToggleRow
+          label="1 hour before"
+          hint="A nudge an hour before something on your schedule."
           value={prefs.oneHourReminderEnabled}
+          disabled={!prefs.remindersEnabled}
           onToggle={() => toggle('oneHourReminderEnabled')}
         />
-        <ToggleRow label="12PM daily summary" value={prefs.noonSummaryEnabled} onToggle={() => toggle('noonSummaryEnabled')} />
+        <ToggleRow
+          label="Midday summary"
+          hint="One message around noon with what is still left."
+          value={prefs.noonSummaryEnabled}
+          disabled={!prefs.remindersEnabled}
+          onToggle={() => toggle('noonSummaryEnabled')}
+        />
+        <ToggleRow
+          label="Gym reminders"
+          hint="Reminders for gym sessions specifically."
+          value={prefs.gymRemindersEnabled}
+          disabled={!prefs.remindersEnabled}
+          onToggle={() => toggle('gymRemindersEnabled')}
+        />
+        <ToggleRow
+          label="Money reminders"
+          hint="Nudges about your budget and entries you have not logged."
+          value={prefs.financeRemindersEnabled}
+          disabled={!prefs.remindersEnabled}
+          onToggle={() => toggle('financeRemindersEnabled')}
+        />
       </Card>
+
+      <p className="bm-settings-footnote" style={{ marginTop: 16 }}>
+        These switches are checked before anything is sent, not just when it is scheduled. Turning one
+        off stops it straight away.
+      </p>
     </div>
   )
 }
 
-function ToggleRow({ label, value, onToggle }: { label: string; value: boolean; onToggle: () => void }) {
+function ToggleRow({
+  label,
+  hint,
+  value,
+  disabled = false,
+  onToggle,
+}: {
+  label: string
+  hint?: string
+  value: boolean
+  disabled?: boolean
+  onToggle: () => void
+}) {
   return (
-    <div className="bm-toggle-row">
-      <span>{label}</span>
-      <button className={`bm-switch ${value ? 'on' : ''}`} onClick={onToggle} aria-pressed={value} aria-label={label}>
+    <div className={`bm-toggle-row ${disabled ? 'is-off' : ''}`}>
+      <span className="bm-toggle-text">
+        <span className="bm-toggle-label">{label}</span>
+        {hint ? <span className="bm-toggle-hint">{hint}</span> : null}
+      </span>
+      <button
+        className={`bm-switch ${value && !disabled ? 'on' : ''}`}
+        onClick={onToggle}
+        disabled={disabled}
+        aria-pressed={value}
+        aria-label={label}
+      >
         <span className="bm-switch-dot" />
       </button>
     </div>

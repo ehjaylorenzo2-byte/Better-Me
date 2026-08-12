@@ -101,7 +101,15 @@
 }
 
 .bm-settings-note strong {
-  color: var(--accent);
+  /* Not --accent. Lime on white is about 1.4:1 and disappears, and these
+     words are the ones people actually need to read: their username, RESET,
+     DELETE. --accent-text is the readable green. */
+  color: var(--accent-text);
+  font-family: var(--font-bold);
+}
+
+.bm-confirm-message strong {
+  color: var(--accent-text);
   font-family: var(--font-bold);
 }
 
@@ -111,6 +119,135 @@
   line-height: 1.6;
   text-align: center;
   padding: 0 8px;
+}
+
+/* ---- Notification rows: label plus one line of plain explanation ---- */
+.bm-toggle-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 16px;
+}
+
+.bm-toggle-label {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.bm-toggle-hint {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+/* A dependent switch reads as unavailable rather than simply off. */
+.bm-toggle-row.is-off {
+  opacity: 0.5;
+}
+
+.bm-switch:disabled {
+  cursor: not-allowed;
+}
+
+/* ---- Motivation tone ---- */
+.bm-tone-option {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+  min-height: 44px;
+}
+
+.bm-tone-option.active {
+  border-color: var(--accent);
+}
+
+.bm-tone-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 15px;
+}
+
+/* Never colour alone: the tick carries the meaning as well as the border. */
+.bm-tone-option.active .bm-tone-head {
+  color: var(--accent-text);
+}
+
+.bm-tone-blurb {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.bm-tone-preview {
+  margin-top: 24px;
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+}
+
+.bm-tone-preview-label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  margin-bottom: 8px;
+}
+
+.bm-tone-preview p {
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* ---- Data screen ---- */
+.bm-month-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.bm-month-choice {
+  padding: 8px 16px;
+  min-height: 44px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--surface-elevated);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.bm-month-choice.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.bm-check-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  min-height: 44px;
+}
+
+.bm-check-row input {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  accent-color: var(--accent);
 }
 
 .bm-profile-name-btn {

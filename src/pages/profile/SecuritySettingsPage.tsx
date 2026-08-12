@@ -1,18 +1,37 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Card } from '@/components/ui/Card'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Input, PasswordInput } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Sheet'
 import { useToast } from '@/components/ui/Toast'
 import { useAuth } from '@/features/auth/AuthContext'
 import { supabase, validatePassword } from '@/lib/supabase'
-import { changeUsername } from '@/services/auth'
+import { changeUsername, getRecoveryEmail, updateRecoveryEmail } from '@/services/auth'
+import { deleteMyAccount } from '@/services/reset'
 import './profile.css'
 import '../auth/auth.css'
 
 export function SecuritySettingsPage() {
   const { show } = useToast()
   const { userId, username, refreshUsername } = useAuth()
+  const navigate = useNavigate()
+
+  // --- recovery email ---
+  const [recovery, setRecovery] = useState('')
+  const [recoveryError, setRecoveryError] = useState<string | null>(null)
+  const [savingRecovery, setSavingRecovery] = useState(false)
+
+  // --- delete account ---
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [typedDelete, setTypedDelete] = useState('')
+  const [deleting, setDeleting] = useState(false)
+
+  useEffect(() => {
+    if (!userId) return
+    getRecoveryEmail(userId).then(setRecovery)
+  }, [userId])
 
   // --- username ---
   const [newUsername, setNewUsername] = useState('')
@@ -70,6 +89,34 @@ export function SecuritySettingsPage() {
       setPasswordError(err instanceof Error ? err.message : 'Could not update password.')
     } finally {
       setSavingPassword(false)
+    }
+  }
+
+  const onSaveRecovery = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!userId) return
+    setSavingRecovery(true)
+    setRecoveryError(null)
+    try {
+      const result = await updateRecoveryEmail(userId, recovery)
+      if (!result.success) {
+        setRecoveryError(result.error ?? 'Could not save that.')
+        return
+      }
+      show(recovery.trim() ? 'Recovery email saved.' : 'Recovery email removed.', 'success')
+    } finally {
+      setSavingRecovery(false)
+    }
+  }
+
+  const onDeleteAccount = async () => {
+    setDeleting(true)
+    try {
+      await deleteMyAccount()
+      navigate('/splash')
+    } catch (err) {
+      setDeleting(false)
+      show(err instanceof Error ? err.message : 'Could not delete the account.', 'error')
     }
   }
 
@@ -152,10 +199,84 @@ export function SecuritySettingsPage() {
         </form>
       </Card>
 
+      {/* ---------------- Recovery email ---------------- */}
+      <Card style={{ marginBottom: 16 }}>
+        <h2 className="bm-section-title">Recovery email</h2>
+        <p className="bm-settings-note">
+          Optional. Better Me signs you in with a username and password, so there is nothing to verify
+          here. Adding an address just means there is a way to identify your account if you ever forget
+          your password. Leave it blank to keep it off.
+        </p>
+        <form className="bm-form" onSubmit={onSaveRecovery} style={{ marginTop: 14 }}>
+          {recoveryError ? <div className="bm-auth-error">{recoveryError}</div> : null}
+          <Input
+            label="Email address"
+            type="email"
+            placeholder="you@example.com"
+            value={recovery}
+            onChange={(e) => setRecovery(e.target.value)}
+            autoCapitalize="none"
+            autoCorrect="off"
+            maxLength={254}
+          />
+          <Button type="submit" fullWidth variant="secondary" loading={savingRecovery}>
+            Save Recovery Email
+          </Button>
+        </form>
+      </Card>
+
+      {/* ---------------- Delete account ---------------- */}
+      <Card style={{ marginBottom: 16 }}>
+        <h2 className="bm-section-title">Delete account</h2>
+        <p className="bm-settings-note">
+          Closes the account for good and removes everything with it, including your login. This is not
+          the same as Reset Everything, which clears your records but keeps you signed up. There is no
+          way to bring a deleted account back.
+        </p>
+        <button
+          className="bm-btn bm-btn-danger bm-btn-full bm-press"
+          onClick={() => {
+            setTypedDelete('')
+            setDeleteOpen(true)
+          }}
+          style={{ marginTop: 12 }}
+        >
+          Delete My Account
+        </button>
+      </Card>
+
       <p className="bm-settings-footnote">
         Your account is private to you. Better Me never shares your data with other users, and every other
         account is blocked from reading it at the database level.
       </p>
+
+      <Modal open={deleteOpen} onClose={() => setDeleteOpen(false)} title="Delete your account?">
+        <p className="bm-confirm-message">
+          Your habits, workouts, wallets, savings, debts and history all go, and so does your login.
+          Type <strong>DELETE</strong> to confirm.
+        </p>
+        <Input
+          label="Type DELETE"
+          value={typedDelete}
+          onChange={(e) => setTypedDelete(e.target.value)}
+          autoCapitalize="characters"
+          autoCorrect="off"
+          placeholder="DELETE"
+        />
+        <div className="bm-confirm-actions" style={{ marginTop: 12 }}>
+          <button className="bm-btn bm-btn-secondary" onClick={() => setDeleteOpen(false)} disabled={deleting}>
+            Cancel
+          </button>
+          <Button
+            variant="danger"
+            loading={deleting}
+            disabled={typedDelete.trim() !== 'DELETE'}
+            onClick={onDeleteAccount}
+          >
+            Delete Account
+          </Button>
+        </div>
+      </Modal>
     </div>
   )
 }

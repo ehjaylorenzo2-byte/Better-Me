@@ -156,8 +156,20 @@ export function ProfilePage() {
           </button>
         </Card>
         <Card className="bm-press">
+          <button className="bm-profile-row" onClick={() => navigate('/profile/motivation')}>
+            <span>Motivation Style</span>
+            <ChevronIcon />
+          </button>
+        </Card>
+        <Card className="bm-press">
           <button className="bm-profile-row" onClick={() => navigate('/profile/notifications')}>
             <span>Notification Settings</span>
+            <ChevronIcon />
+          </button>
+        </Card>
+        <Card className="bm-press">
+          <button className="bm-profile-row" onClick={() => navigate('/profile/data')}>
+            <span>Data</span>
             <ChevronIcon />
           </button>
         </Card>
