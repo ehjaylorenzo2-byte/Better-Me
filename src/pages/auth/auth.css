@@ -70,7 +70,7 @@
 
 .bm-auth-footer a,
 .bm-auth-footer button.bm-link {
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 700;
   background: none;
   border: none;
@@ -108,8 +108,10 @@
   padding: 8px 14px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--accent);
-  background: rgba(33, 237, 166, 0.1);
-  color: var(--accent);
+  /* Was a hard-coded emerald left over from the old palette, which no longer
+     matched anything on screen. */
+  background: var(--accent-tint);
+  color: var(--accent-text);
   font-size: 13px;
   font-weight: 700;
   min-height: 36px;
