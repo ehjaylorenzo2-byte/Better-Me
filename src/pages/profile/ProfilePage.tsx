@@ -156,6 +156,12 @@ export function ProfilePage() {
           </button>
         </Card>
         <Card className="bm-press">
+          <button className="bm-profile-row" onClick={() => navigate('/profile/home-screen')}>
+            <span>Home Screen</span>
+            <ChevronIcon />
+          </button>
+        </Card>
+        <Card className="bm-press">
           <button className="bm-profile-row" onClick={() => navigate('/profile/motivation')}>
             <span>Motivation Style</span>
             <ChevronIcon />

@@ -27,7 +27,10 @@
   color: var(--text-primary);
   font-size: 15px;
   font-weight: 600;
-  padding: 4px 0;
+  /* The row, not the card around it, is the button. It has to be tall enough
+     to hit: at 26px people were tapping the card and nothing happened. */
+  min-height: 44px;
+  padding: var(--space-1) 0;
 }
 
 .bm-theme-options {
@@ -50,7 +53,10 @@
 
 .bm-theme-option.active {
   border-color: var(--accent);
-  color: var(--accent);
+  /* Not --accent: lime on white is about 1.4:1 and the selected option was the
+     hardest one on the screen to read. The tick carries the state too, so it
+     is never colour alone. */
+  color: var(--accent-text);
 }
 
 .bm-toggle-row {
@@ -119,6 +125,68 @@
   line-height: 1.6;
   text-align: center;
   padding: 0 8px;
+}
+
+/* ---- Text size ----
+   The samples are deliberately fixed sizes rather than --fs-* ones. They are
+   showing you what each option does, so they must not themselves change when
+   you pick one. */
+.bm-size-options {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.bm-size-option {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-4) var(--space-2);
+  min-height: 88px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+}
+
+.bm-size-option.active {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+}
+
+.bm-size-sample {
+  font-family: var(--font-bold);
+  line-height: 1;
+}
+
+.bm-size-option.is-small .bm-size-sample {
+  font-size: 16px;
+}
+
+.bm-size-option.is-medium .bm-size-sample {
+  font-size: 22px;
+}
+
+.bm-size-option.is-large .bm-size-sample {
+  font-size: 28px;
+}
+
+.bm-size-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.bm-size-option.active .bm-size-label {
+  color: var(--accent-text);
+  font-family: var(--font-medium);
+}
+
+.bm-size-tick {
+  font-size: 12px;
+  line-height: 1;
+  color: var(--accent-text);
 }
 
 /* ---- Notification rows: label plus one line of plain explanation ---- */
@@ -253,13 +321,15 @@
 .bm-profile-name-btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: var(--space-2);
   background: none;
   border: none;
   color: var(--text-primary);
-  padding: 4px 8px;
+  padding: var(--space-1) var(--space-2);
+  min-height: 44px;
   border-radius: var(--radius-sm);
-  margin-top: 6px;
+  margin-top: var(--space-1);
 }
 
 .bm-profile-name-btn h1 {
