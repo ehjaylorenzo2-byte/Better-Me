@@ -92,6 +92,71 @@ async function sendPushToUser(userId: string, payload: { title: string; body: st
 }
 
 Deno.serve(async () => {
+
+/**
+ * Preferences, read once per user per run.
+ *
+ * Until now these switches were decoration: the one hour reminder never looked
+ * at them at all, so turning notifications off changed nothing. Every send now
+ * passes through canSend().
+ */
+const prefCache = new Map<string, Record<string, boolean>>()
+
+async function loadPrefs(userId: string): Promise<Record<string, boolean>> {
+  const cached = prefCache.get(userId)
+  if (cached) return cached
+
+  const { data } = await supabase
+    .from('notification_preferences')
+    .select('reminders_enabled, one_hour_reminder_enabled, noon_summary_enabled, gym_reminders_enabled')
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  // Missing row means the user has never touched settings, so defaults apply.
+  const prefs = {
+    reminders: data?.reminders_enabled ?? true,
+    oneHour: data?.one_hour_reminder_enabled ?? true,
+    noon: data?.noon_summary_enabled ?? true,
+    gym: data?.gym_reminders_enabled ?? true,
+  }
+  prefCache.set(userId, prefs)
+  return prefs
+}
+
+async function canSend(userId: string, kind: 'one_hour' | 'noon_summary', isGym: boolean): Promise<boolean> {
+  const prefs = await loadPrefs(userId)
+  if (!prefs.reminders) return false
+  if (kind === 'one_hour' && !prefs.oneHour) return false
+  if (kind === 'noon_summary' && !prefs.noon) return false
+  if (isGym && !prefs.gym) return false
+  return true
+}
+
+/**
+ * Claims the right to send one reminder, and returns false if it was already
+ * claimed.
+ *
+ * The guarantee is the unique index on reminder_deliveries, not this function:
+ * inserting first means two overlapping runs cannot both win, which a
+ * check-then-send would allow. The push tag only ever deduplicated what the
+ * phone displayed, never what we sent.
+ */
+async function claimDelivery(
+  userId: string,
+  kind: 'one_hour' | 'noon_summary',
+  subjectId: string | null,
+  date: string,
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('reminder_deliveries')
+    .insert({ user_id: userId, kind, subject_id: subjectId, occurrence_date: date })
+
+  // 23505 is the unique violation: someone already sent this one. Any other
+  // error also means do not send, because we could not prove it is safe to.
+  if (error) return false
+  return true
+}
+
   const { date: today, time: nowTime } = phNowParts()
   const windowStart = nowTime
   const windowEnd = addMinutes(nowTime, 5)
@@ -103,7 +168,7 @@ Deno.serve(async () => {
   // ---------------------------------------------------------------------
   const { data: schedules } = await supabase
     .from('habit_schedules')
-    .select('*, habits!inner(id, user_id, name, archived)')
+    .select('*, habits!inner(id, user_id, name, archived, category)')
     .eq('reminder_enabled', true)
     .not('time', 'is', null)
 
@@ -124,6 +189,10 @@ Deno.serve(async () => {
 
     if (occurrence?.status) continue // already Done/Skipped/Cancelled -- no reminder.
 
+    const isGym = schedule.habits.category === 'gym'
+    if (!(await canSend(schedule.habits.user_id, 'one_hour', isGym))) continue
+    if (!(await claimDelivery(schedule.habits.user_id, 'one_hour', schedule.habits.id, today))) continue
+
     await sendPushToUser(schedule.habits.user_id, {
       title: `${schedule.habits.name} in 1 hour`,
       body: `You scheduled it. Show up.`,
@@ -138,7 +207,7 @@ Deno.serve(async () => {
   if (nowTime >= '12:00' && nowTime < '12:05') {
     const { data: allSchedules } = await supabase
       .from('habit_schedules')
-      .select('*, habits!inner(id, user_id, name, archived)')
+      .select('*, habits!inner(id, user_id, name, archived, category)')
 
     const outstandingByUser = new Map<string, string[]>()
 
@@ -161,13 +230,9 @@ Deno.serve(async () => {
     }
 
     for (const [userId, names] of outstandingByUser) {
-      const { data: pref } = await supabase
-        .from('notification_preferences')
-        .select('noon_summary_enabled')
-        .eq('user_id', userId)
-        .maybeSingle()
-      if (pref && pref.noon_summary_enabled === false) continue
       if (names.length === 0) continue // nothing outstanding -> no unnecessary reminder.
+      if (!(await canSend(userId, 'noon_summary', false))) continue
+      if (!(await claimDelivery(userId, 'noon_summary', null, today))) continue
 
       const body = `You still have ${names.length} thing${names.length > 1 ? 's' : ''} left today:\n${names.join('\n')}\n\nYou've got time. Get moving.`
       await sendPushToUser(userId, { title: 'Better Me', body, tag: `noon-${today}`, url: '/' })
