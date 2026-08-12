@@ -1,4 +1,5 @@
 import type { DailyProgress } from './calculations'
+import type { MotivationTone } from '@/types/models'
 
 /**
  * Reusable phrase library. Selection is driven entirely by real computed
@@ -45,22 +46,62 @@ function pick(list: string[], seed: number): string {
  * Deterministic-per-day selection (seeded by date string) so the message
  * doesn't flicker between renders, but still varies day to day.
  */
-export function getMotivationMessage(progress: DailyProgress, daySeed = 0): string {
+/**
+ * How hard a message is allowed to hit, per tone.
+ *
+ * Performance still picks the band. Tone only shifts how far that band is
+ * allowed to travel, which is why Encourage Me can never produce a roast no
+ * matter how bad the day was, and Brutal never softens a good day into
+ * flattery: at 90 percent done it still lands in encouragement.
+ */
+const TONE_SHIFT: Record<MotivationTone, number> = {
+  encourage: -2,
+  balanced: 0,
+  roast: 1,
+  brutal: 2,
+}
+
+// Gentlest first. Shifting the index is what tone does.
+const BANDS = [STRONG_ENCOURAGEMENT, ENCOURAGEMENT_WITH_PUSH, LIGHT_ROAST, STRONGER_ROAST]
+
+function clampBand(index: number): number {
+  return Math.min(BANDS.length - 1, Math.max(0, index))
+}
+
+/**
+ * Deterministic per day, driven by real performance, then nudged by tone.
+ *
+ * Seeded by the date so the message does not flicker between renders while
+ * still changing from one day to the next.
+ */
+export function getMotivationMessage(
+  progress: DailyProgress,
+  daySeed = 0,
+  tone: MotivationTone = 'balanced',
+): string {
   const finalized = progress.done + progress.skipped + progress.cancelled
   if (finalized === 0) {
-    return "Nothing logged yet today. Start with one thing."
+    return 'Nothing logged yet today. Start with one thing.'
   }
 
   const doneRate = progress.doneRateAmongFinalized
-  const skipCancelRate = finalized > 0 ? ((progress.skipped + progress.cancelled) / finalized) * 100 : 0
+  const skipCancelRate = ((progress.skipped + progress.cancelled) / finalized) * 100
 
-  if (skipCancelRate >= 60) {
+  // Base band from performance alone.
+  let band: number
+  if (doneRate >= 80) band = 0
+  else if (doneRate >= 60) band = 1
+  else if (doneRate >= 40) band = 2
+  else band = 3
+
+  // Skipping almost everything is its own failure mode, worth calling out
+  // separately, but only for people who asked to be pushed. Encourage never
+  // reaches it; Balanced does, because Balanced is honest by definition.
+  if (skipCancelRate >= 60 && TONE_SHIFT[tone] >= 0) {
     return pick(HIGH_SKIP_CANCEL_ROAST, daySeed)
   }
-  if (doneRate >= 80) return pick(STRONG_ENCOURAGEMENT, daySeed)
-  if (doneRate >= 60) return pick(ENCOURAGEMENT_WITH_PUSH, daySeed)
-  if (doneRate >= 40) return pick(LIGHT_ROAST, daySeed)
-  return pick(STRONGER_ROAST, daySeed)
+
+  return pick(BANDS[clampBand(band + TONE_SHIFT[tone])], daySeed)
 }
 
 export function getFinanceMotivationMessage(isOverBudget: boolean, overByRatio: number): string {
