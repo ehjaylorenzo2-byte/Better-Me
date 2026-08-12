@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import type { Transfer } from '@/types/models'
 import type { Centavos } from '@/utils/money'
-import type { IsoDate } from '@/utils/timezone'
+import { getPhilippineMonthRange, type IsoDate } from '@/utils/timezone'
 
 interface Row {
   id: string
@@ -71,12 +71,13 @@ export async function addTransfer(userId: string, draft: TransferDraft): Promise
 }
 
 export async function listTransfersForMonth(userId: string, month: string): Promise<Transfer[]> {
+  const { start, end } = getPhilippineMonthRange(month)
   const { data, error } = await supabase
     .from('transfers')
     .select('*')
     .eq('user_id', userId)
-    .gte('entry_date', `${month}-01`)
-    .lte('entry_date', `${month}-31`)
+    .gte('entry_date', start)
+    .lte('entry_date', end)
     .order('entry_date', { ascending: false })
     .order('created_at', { ascending: false })
 

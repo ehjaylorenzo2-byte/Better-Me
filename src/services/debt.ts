@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { getPhilippineMonthRange } from '@/utils/timezone'
 import type { Debt, DebtPayment } from '@/types/models'
 import type { Centavos } from '@/utils/money'
 
@@ -152,12 +153,13 @@ export async function recordDebtPayment(
  * created, so they still land in the right month.
  */
 export async function listPaymentsForMonth(userId: string, month: string): Promise<DebtPayment[]> {
+  const { start, end } = getPhilippineMonthRange(month)
   const { data, error } = await supabase
     .from('debt_payments')
     .select('*')
     .eq('user_id', userId)
-    .gte('entry_date', `${month}-01`)
-    .lte('entry_date', `${month}-31`)
+    .gte('entry_date', start)
+    .lte('entry_date', end)
     .order('entry_date', { ascending: false })
   if (error) throw error
   return (data ?? []).map(mapPayment)

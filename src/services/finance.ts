@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import type { IncomeEntry, ExpenseEntry, Budget } from '@/types/models'
 import type { Centavos } from '@/utils/money'
-import type { IsoDate } from '@/utils/timezone'
+import { getPhilippineMonthRange, type IsoDate } from '@/utils/timezone'
 
 export const DEFAULT_EXPENSE_CATEGORIES = [
   'Food',
@@ -106,24 +106,26 @@ export async function addExpense(
 }
 
 export async function listIncomeForMonth(userId: string, month: string): Promise<IncomeEntry[]> {
+  const { start, end } = getPhilippineMonthRange(month)
   const { data, error } = await supabase
     .from('income_entries')
     .select('*')
     .eq('user_id', userId)
-    .gte('entry_date', `${month}-01`)
-    .lte('entry_date', `${month}-31`)
+    .gte('entry_date', start)
+    .lte('entry_date', end)
     .order('entry_date', { ascending: false })
   if (error) throw error
   return (data ?? []).map(mapIncome)
 }
 
 export async function listExpensesForMonth(userId: string, month: string): Promise<ExpenseEntry[]> {
+  const { start, end } = getPhilippineMonthRange(month)
   const { data, error } = await supabase
     .from('expense_entries')
     .select('*')
     .eq('user_id', userId)
-    .gte('entry_date', `${month}-01`)
-    .lte('entry_date', `${month}-31`)
+    .gte('entry_date', start)
+    .lte('entry_date', end)
     .order('entry_date', { ascending: false })
   if (error) throw error
   return (data ?? []).map(mapExpense)

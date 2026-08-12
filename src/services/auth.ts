@@ -185,6 +185,41 @@ export async function updateDisplayName(userId: string, name: string): Promise<A
 
 
 /**
+ * Reads the optional recovery email.
+ *
+ * Deliberately separate from the internal auth alias, which is plumbing and is
+ * never shown to anyone.
+ */
+export async function getRecoveryEmail(userId: string): Promise<string> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('recovery_email')
+    .eq('id', userId)
+    .maybeSingle()
+  if (error || !data) return ''
+  return (data.recovery_email ?? '').trim()
+}
+
+/** Saves or clears the recovery email. An empty string clears it. */
+export async function updateRecoveryEmail(userId: string, email: string): Promise<AuthResult> {
+  const trimmed = email.trim()
+  if (trimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmed)) {
+    return { success: false, error: 'That does not look like an email address.' }
+  }
+  if (trimmed.length > 254) return { success: false, error: 'That email address is too long.' }
+  if (trimmed.toLowerCase().endsWith('@betterme.local')) {
+    return { success: false, error: 'Use a real inbox you can open.' }
+  }
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ recovery_email: trimmed || null })
+    .eq('id', userId)
+  if (error) return { success: false, error: 'Could not save that. Try again.' }
+  return { success: true }
+}
+
+/**
  * Changes the username, which in Better Me is also the login identifier.
  *
  * The username maps to an internal Supabase auth alias
