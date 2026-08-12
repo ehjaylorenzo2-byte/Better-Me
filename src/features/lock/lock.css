@@ -83,7 +83,9 @@
 .bm-lock-key-soft {
   background: transparent;
   border-color: transparent;
-  color: var(--accent);
+  /* Lime text on a light surface is about 1.4:1. --accent-text is the readable
+     green in light mode and stays lime in dark mode. */
+  color: var(--accent-text);
   font-size: 20px;
 }
 
