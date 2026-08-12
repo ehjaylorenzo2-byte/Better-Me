@@ -21,18 +21,57 @@ body {
   overscroll-behavior-y: none;
 }
 
+/* ---------------------------------------------------------------------------
+   The column
+
+   Better Me is a phone app first, and it stays a single readable column at
+   every width rather than fanning out into a dashboard on a laptop. What
+   changes with width is how wide that column may get and how much room sits
+   around it. That is why the same screens work from a 320px phone to a 1920px
+   monitor without a second design to maintain.
+
+   --column is published as a custom property so the fixed bottom bar can match
+   it exactly instead of repeating the numbers and drifting.
+   --------------------------------------------------------------------------- */
+:root {
+  --column: 560px;
+}
+
 #root {
-  max-width: 560px;
+  max-width: var(--column);
   margin: 0 auto;
   min-height: 100%;
   position: relative;
   background: var(--bg-primary);
 }
 
-@media (min-width: 900px) {
+/* Tablet portrait and up: wider, and lifted off the page edge so it reads as a
+   surface rather than a phone screenshot stretched to fit. */
+@media (min-width: 768px) {
+  :root {
+    --column: 620px;
+  }
+
   #root {
-    max-width: 640px;
+    box-shadow: var(--shadow-soft);
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --column: 680px;
+  }
+
+  #root {
     box-shadow: var(--shadow-elevated);
+  }
+}
+
+/* Large monitors. Past this the column deliberately stops growing: a 1600px
+   line of text is unreadable, and the app is not trying to fill the screen. */
+@media (min-width: 1366px) {
+  :root {
+    --column: 720px;
   }
 }
 
@@ -81,9 +120,23 @@ a {
   border-radius: 6px;
 }
 
+/* The scrolling page body.
+   Bottom padding clears the fixed nav AND the home indicator underneath it,
+   which is why --safe-bottom is added rather than assumed to be zero. The side
+   padding picks up the landscape notch inset for the same reason. */
 .app-scroll-area {
-  padding: calc(20px + var(--safe-top)) 18px calc(var(--nav-height) + 28px);
+  padding-top: calc(var(--space-6) + var(--safe-top));
+  padding-right: calc(18px + var(--safe-right));
+  padding-bottom: calc(var(--nav-height) + var(--safe-bottom) + var(--space-8));
+  padding-left: calc(18px + var(--safe-left));
   min-height: 100%;
+}
+
+@media (min-width: 768px) {
+  .app-scroll-area {
+    padding-right: calc(var(--space-6) + var(--safe-right));
+    padding-left: calc(var(--space-6) + var(--safe-left));
+  }
 }
 
 .num {
@@ -98,6 +151,36 @@ a {
   font-family: var(--font-medium);
   font-size: 14px;
   padding: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   Touch targets
+
+   Some controls are meant to be visually small: a text link, a toggle, the
+   little camera badge on your avatar. Making them physically 44px would wreck
+   the layout, so instead an invisible 44px pad is centred over each one. The
+   control looks identical and the finger gets the area it needs.
+
+   Everything here is pointer-events only; nothing shifts, nothing reflows.
+   --------------------------------------------------------------------------- */
+.bm-link,
+.bm-switch,
+.bm-avatar-edit-btn {
+  position: relative;
+}
+
+.bm-link::after,
+.bm-switch::after,
+.bm-avatar-edit-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  min-width: 44px;
+  min-height: 44px;
+  width: 100%;
+  height: 100%;
 }
 
 /* ---------------------------------------------------------------------------
