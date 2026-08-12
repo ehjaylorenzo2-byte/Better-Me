@@ -32,11 +32,17 @@ export function EmptyState({ message, action }: { message: string; action?: Reac
   )
 }
 
+/**
+ * Better Me has no offline queue. What is already on screen keeps working
+ * because it is already loaded, but nothing new can be saved until the
+ * connection is back. The wording says exactly that, rather than implying the
+ * app will quietly catch up later.
+ */
 export function OfflineBanner({ visible }: { visible: boolean }) {
   if (!visible) return null
   return (
     <div className="bm-offline-banner" role="status">
-      You're offline. Reconnect before saving changes.
+      You're offline. You can still look around, but nothing new can be saved until you reconnect.
     </div>
   )
 }

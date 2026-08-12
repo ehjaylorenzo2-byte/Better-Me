@@ -1,0 +1,105 @@
+/**
+ * Swipe to delete.
+ *
+ * The red panel is not moved at all. It sits still underneath and the row
+ * slides off it, which is both cheaper to animate and what iOS does.
+ */
+
+.bm-swipe {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+}
+
+.bm-swipe-action {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 88px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  border: none;
+  background: var(--danger);
+  color: #fff;
+  font-family: var(--font-medium);
+  font-size: 12px;
+}
+
+.bm-swipe-row {
+  position: relative;
+  background: var(--bg-primary);
+  /* Vertical panning still belongs to the page; horizontal is ours. */
+  touch-action: pan-y;
+  will-change: transform;
+  transition: transform var(--dur-base) var(--ease-spring);
+}
+
+/* While a finger is down the row must track it exactly, with no easing. */
+.bm-swipe-row.is-dragging {
+  transition: none;
+}
+
+.bm-swipe.is-busy {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* ---- The desktop affordance ----
+   Touch devices get the swipe and no button. Anything with a real pointer gets
+   the button, because there is no gesture to discover there. */
+.bm-swipe-menu {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .bm-swipe-menu {
+    position: absolute;
+    top: 50%;
+    right: 6px;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: transparent;
+    color: var(--text-tertiary);
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out),
+      color var(--dur-fast) var(--ease-out);
+  }
+
+  .bm-swipe:hover .bm-swipe-menu,
+  .bm-swipe-menu:focus-visible {
+    opacity: 1;
+  }
+
+  .bm-swipe-menu:hover {
+    background: var(--danger-tint);
+    color: var(--danger);
+  }
+
+  /* No swipe on a mouse, so the panel would only ever be dead space. */
+  .bm-swipe-action {
+    display: none;
+  }
+}
+
+/* Keyboard users never trigger the swipe, so the button has to be reachable
+   even on a touch-capable laptop where the hover query above may not match. */
+.bm-swipe-menu:focus-visible {
+  display: flex;
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bm-swipe-row {
+    transition: none;
+  }
+}

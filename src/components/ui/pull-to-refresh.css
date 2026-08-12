@@ -1,0 +1,37 @@
+.bm-ptr {
+  position: relative;
+}
+
+.bm-ptr-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.bm-ptr-label {
+  font-family: var(--font-medium);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.bm-ptr-indicator.is-refreshing .bm-ptr-label {
+  color: var(--accent-text);
+}
+
+.bm-ptr-body {
+  transition: transform var(--dur-base) var(--ease-spring);
+}
+
+/* Following the finger has to be immediate; the spring is only for the snap
+   back after release. */
+.bm-ptr-body.is-pulling {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bm-ptr-body {
+    transition: none;
+  }
+}

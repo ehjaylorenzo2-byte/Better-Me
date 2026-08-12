@@ -15,8 +15,9 @@
 }
 
 .bm-back-btn {
-  width: 42px;
-  height: 42px;
+  /* 44, not 42. It is the control people hit most often and least carefully. */
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: var(--surface);
   border: 1px solid var(--border);
