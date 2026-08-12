@@ -4,9 +4,13 @@
   bottom: 0;
   transform: translateX(-50%);
   width: 100%;
-  max-width: 560px;
+  /* Tracks the content column at every breakpoint from one shared value, so
+     the bar can never end up narrower or wider than the page above it. */
+  max-width: var(--column);
   height: calc(var(--nav-height) + var(--safe-bottom));
   padding-bottom: var(--safe-bottom);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
   display: grid;
   grid-template-columns: 1fr 1fr auto 1fr 1fr;
   align-items: center;
