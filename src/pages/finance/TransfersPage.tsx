@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/features/auth/AuthContext'
 import { LoadingState, ErrorState } from '@/components/ui/States'
 import { SectionRow } from '@/components/ui/SectionRow'
-import { ConfirmDialog } from '@/components/ui/Sheet'
+import { SwipeToDelete } from '@/components/ui/SwipeToDelete'
 import { useToast } from '@/components/ui/Toast'
 import { deleteTransfer, listTransfersForMonth } from '@/services/transfers'
 import { buildAccountLookup, ensureDefaultAccounts, listAccounts } from '@/services/accounts'
@@ -20,7 +20,6 @@ export function TransfersPage() {
   const [accounts, setAccounts] = useState<FinanceAccount[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [pendingDelete, setPendingDelete] = useState<Transfer | null>(null)
 
   const month = getCurrentPhilippineMonth()
 
@@ -63,10 +62,7 @@ export function TransfersPage() {
 
   const nameFor = (id: string | null) => (id ? accountLookup.get(id)?.name ?? 'Deleted bank' : 'Outside')
 
-  const confirmDelete = async () => {
-    if (!pendingDelete) return
-    const entry = pendingDelete
-    setPendingDelete(null)
+  const removeEntry = async (entry: Transfer) => {
     try {
       await deleteTransfer(entry.id)
       show('Transfer removed.', 'success')
@@ -87,6 +83,7 @@ export function TransfersPage() {
       editHref="/finance/transfers/edit"
       addHref="/finance/transfers/new"
       addLabel="Add transfer"
+      onRefresh={load}
     >
       <p className="bm-section-note">
         A transfer moves money between your own accounts. It is not income and not an expense, so it
@@ -108,38 +105,31 @@ export function TransfersPage() {
             {list.map((entry) => {
               const from = entry.fromAccountId ? accountLookup.get(entry.fromAccountId) : null
               return (
-                <SectionRow
+                <SwipeToDelete
                   key={entry.id}
-                  onClick={() => setPendingDelete(entry)}
-                  icon={from?.icon ?? 'repeat'}
-                  color={from?.color ?? 'sky'}
-                  title={`${nameFor(entry.fromAccountId)} to ${nameFor(entry.toAccountId)}`}
-                  subtitle={entry.note ?? undefined}
-                  value={formatCurrency(entry.amount)}
-                  valueTone="muted"
-                  chevron={false}
-                />
+                  onDelete={() => removeEntry(entry)}
+                  confirmTitle="Remove this transfer?"
+                  confirmMessage={`${formatCurrency(entry.amount)} from ${nameFor(entry.fromAccountId)} to ${nameFor(
+                    entry.toAccountId,
+                  )}. This cannot be undone.`}
+                  deleteLabel="Remove"
+                >
+                  <SectionRow
+                    icon={from?.icon ?? 'repeat'}
+                    color={from?.color ?? 'sky'}
+                    title={`${nameFor(entry.fromAccountId)} to ${nameFor(entry.toAccountId)}`}
+                    subtitle={entry.note ?? undefined}
+                    value={formatCurrency(entry.amount)}
+                    valueTone="muted"
+                    chevron={false}
+                  />
+                </SwipeToDelete>
               )
             })}
           </DayGroup>
         ))
       )}
 
-      <ConfirmDialog
-        open={pendingDelete !== null}
-        title="Remove this transfer?"
-        message={
-          pendingDelete
-            ? `${formatCurrency(pendingDelete.amount)} from ${nameFor(pendingDelete.fromAccountId)} to ${nameFor(
-                pendingDelete.toAccountId,
-              )}. This cannot be undone.`
-            : ''
-        }
-        confirmLabel="Remove"
-        danger
-        onConfirm={confirmDelete}
-        onCancel={() => setPendingDelete(null)}
-      />
     </SectionShell>
   )
 }

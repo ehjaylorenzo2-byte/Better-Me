@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { PullToRefresh } from '@/components/ui/PullToRefresh'
 import { formatCurrency, type Centavos } from '@/utils/money'
 import './finance.css'
 
@@ -18,6 +19,7 @@ export function SectionShell({
   editHref,
   addHref,
   addLabel,
+  onRefresh,
   children,
 }: {
   title: string
@@ -27,11 +29,13 @@ export function SectionShell({
   editHref: string
   addHref: string
   addLabel: string
+  /** Supplying this turns on pull to refresh for the section. */
+  onRefresh?: () => void | Promise<void>
   children: ReactNode
 }) {
   const navigate = useNavigate()
 
-  return (
+  const body = (
     <div className="bm-section-page bm-enter">
       <div className="bm-section-bar">
         <button type="button" className="bm-icon-btn" aria-label="Go back" onClick={() => navigate(-1)}>
@@ -60,6 +64,9 @@ export function SectionShell({
       {children}
     </div>
   )
+
+  if (!onRefresh) return body
+  return <PullToRefresh onRefresh={onRefresh}>{body}</PullToRefresh>
 }
 
 /**

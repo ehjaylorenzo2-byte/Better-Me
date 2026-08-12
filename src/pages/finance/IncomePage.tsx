@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/features/auth/AuthContext'
 import { LoadingState, ErrorState } from '@/components/ui/States'
 import { SectionRow } from '@/components/ui/SectionRow'
-import { ConfirmDialog } from '@/components/ui/Sheet'
+import { SwipeToDelete } from '@/components/ui/SwipeToDelete'
 import { useToast } from '@/components/ui/Toast'
 import { deleteIncomeEntry, listIncomeForMonth } from '@/services/finance'
 import { buildCategoryLookup, listCategories, type FinanceCategory } from '@/services/categories'
@@ -22,7 +22,6 @@ export function IncomePage() {
   const [accounts, setAccounts] = useState<FinanceAccount[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [pendingDelete, setPendingDelete] = useState<IncomeEntry | null>(null)
 
   const month = getCurrentPhilippineMonth()
 
@@ -65,10 +64,7 @@ export function IncomePage() {
     return [...map.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1))
   }, [entries])
 
-  const confirmDelete = async () => {
-    if (!pendingDelete) return
-    const entry = pendingDelete
-    setPendingDelete(null)
+  const removeEntry = async (entry: IncomeEntry) => {
     try {
       await deleteIncomeEntry(entry.id)
       show('Income removed.', 'success')
@@ -90,6 +86,7 @@ export function IncomePage() {
       editHref="/finance/income/edit"
       addHref="/finance/income/new"
       addLabel="Add income"
+      onRefresh={load}
     >
       {grouped.length === 0 ? (
         <SectionEmpty
@@ -108,36 +105,29 @@ export function IncomePage() {
               const account = entry.accountId ? accountLookup.get(entry.accountId) : null
               const meta = [account?.name, entry.note].filter(Boolean).join(' · ')
               return (
-                <SectionRow
+                <SwipeToDelete
                   key={entry.id}
-                  onClick={() => setPendingDelete(entry)}
-                  icon={category?.icon ?? 'banknote'}
-                  color={category?.color ?? 'lime'}
-                  title={entry.source}
-                  subtitle={meta || undefined}
-                  value={`+${formatCurrency(entry.amount)}`}
-                  valueTone="in"
-                  chevron={false}
-                />
+                  onDelete={() => removeEntry(entry)}
+                  confirmTitle="Remove this income?"
+                  confirmMessage={`${entry.source}, ${formatCurrency(entry.amount)}. This cannot be undone.`}
+                  deleteLabel="Remove"
+                >
+                  <SectionRow
+                    icon={category?.icon ?? 'banknote'}
+                    color={category?.color ?? 'lime'}
+                    title={entry.source}
+                    subtitle={meta || undefined}
+                    value={`+${formatCurrency(entry.amount)}`}
+                    valueTone="in"
+                    chevron={false}
+                  />
+                </SwipeToDelete>
               )
             })}
           </DayGroup>
         ))
       )}
 
-      <ConfirmDialog
-        open={pendingDelete !== null}
-        title="Remove this income?"
-        message={
-          pendingDelete
-            ? `${pendingDelete.source}, ${formatCurrency(pendingDelete.amount)}. This cannot be undone.`
-            : ''
-        }
-        confirmLabel="Remove"
-        danger
-        onConfirm={confirmDelete}
-        onCancel={() => setPendingDelete(null)}
-      />
     </SectionShell>
   )
 }

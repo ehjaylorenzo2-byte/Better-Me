@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/features/auth/AuthContext'
 import { LoadingState, ErrorState } from '@/components/ui/States'
 import { SectionRow } from '@/components/ui/SectionRow'
-import { ConfirmDialog } from '@/components/ui/Sheet'
+import { SwipeToDelete } from '@/components/ui/SwipeToDelete'
 import { useToast } from '@/components/ui/Toast'
 import { deleteExpenseEntry, listExpensesForMonth } from '@/services/finance'
 import { buildCategoryLookup, listCategories, type FinanceCategory } from '@/services/categories'
@@ -22,7 +22,6 @@ export function ExpensesPage() {
   const [accounts, setAccounts] = useState<FinanceAccount[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [pendingDelete, setPendingDelete] = useState<ExpenseEntry | null>(null)
 
   const month = getCurrentPhilippineMonth()
 
@@ -65,10 +64,7 @@ export function ExpensesPage() {
     return [...map.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1))
   }, [entries])
 
-  const confirmDelete = async () => {
-    if (!pendingDelete) return
-    const entry = pendingDelete
-    setPendingDelete(null)
+  const removeEntry = async (entry: ExpenseEntry) => {
     try {
       await deleteExpenseEntry(entry.id)
       show('Expense removed.', 'success')
@@ -90,6 +86,7 @@ export function ExpensesPage() {
       editHref="/finance/expenses/edit"
       addHref="/finance/expense/new"
       addLabel="Add expense"
+      onRefresh={load}
     >
       {grouped.length === 0 ? (
         <SectionEmpty
@@ -108,36 +105,28 @@ export function ExpensesPage() {
               const account = entry.accountId ? accountLookup.get(entry.accountId) : null
               const meta = [account?.name, entry.description].filter(Boolean).join(' · ')
               return (
-                <SectionRow
+                <SwipeToDelete
                   key={entry.id}
-                  onClick={() => setPendingDelete(entry)}
-                  icon={category?.icon ?? 'circle'}
-                  color={category?.color}
-                  title={entry.category}
-                  subtitle={meta || undefined}
-                  value={`-${formatCurrency(entry.amount)}`}
-                  valueTone="out"
-                  chevron={false}
-                />
+                  onDelete={() => removeEntry(entry)}
+                  confirmTitle="Remove this expense?"
+                  confirmMessage={`${entry.category}, ${formatCurrency(entry.amount)}. This cannot be undone.`}
+                  deleteLabel="Remove"
+                >
+                  <SectionRow
+                    icon={category?.icon ?? 'circle'}
+                    color={category?.color}
+                    title={entry.category}
+                    subtitle={meta || undefined}
+                    value={`-${formatCurrency(entry.amount)}`}
+                    valueTone="out"
+                    chevron={false}
+                  />
+                </SwipeToDelete>
               )
             })}
           </DayGroup>
         ))
       )}
-
-      <ConfirmDialog
-        open={pendingDelete !== null}
-        title="Remove this expense?"
-        message={
-          pendingDelete
-            ? `${pendingDelete.category}, ${formatCurrency(pendingDelete.amount)}. This cannot be undone.`
-            : ''
-        }
-        confirmLabel="Remove"
-        danger
-        onConfirm={confirmDelete}
-        onCancel={() => setPendingDelete(null)}
-      />
     </SectionShell>
   )
 }
