@@ -201,6 +201,10 @@ async function main() {
       ['calendar', '/calendar'],
       ['savings', '/savings'],
       ['profile', '/profile'],
+      ['profile-motivation', '/profile/motivation'],
+      ['profile-data', '/profile/data'],
+      ['profile-notifications', '/profile/notifications'],
+      ['profile-security', '/profile/security'],
     ]
 
     const shoot = async (name, file) => {
