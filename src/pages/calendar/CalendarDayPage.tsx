@@ -7,7 +7,7 @@ import { StatusSelector } from '@/components/ui/StatusSelector'
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/States'
 import { useToast } from '@/components/ui/Toast'
 import { getOccurrencesInRange, setOccurrenceStatus } from '@/services/habits'
-import { formatIsoDateLong, formatIsoTime12h } from '@/utils/timezone'
+import { formatIsoDateLong, formatIsoTime12h, isFuturePhilippineDate } from '@/utils/timezone'
 import type { Habit, HabitOccurrence, HabitSchedule, HabitStatus } from '@/types/models'
 import './calendar.css'
 
@@ -41,13 +41,21 @@ export function CalendarDayPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, date])
 
-  const onStatusChange = async (row: Row, status: HabitStatus) => {
+  // This page can be pointed at any date via the URL, so it is the one place
+  // most likely to try to decide a day that has not happened yet.
+  const isFuture = date ? isFuturePhilippineDate(date) : false
+
+  const onStatusChange = async (row: Row, status: HabitStatus | null) => {
+    if (isFuture) {
+      show('That day has not happened yet.', 'error')
+      return
+    }
     try {
       await setOccurrenceStatus(row.habitId, row.scheduleId, row.occurrenceDate, row.scheduledTime, status)
-      show('Updated.', 'success')
+      show(status ? 'Updated.' : 'Cleared.', 'success')
       load()
-    } catch {
-      show('Could not update status.', 'error')
+    } catch (err) {
+      show(err instanceof Error ? err.message : 'Could not update status.', 'error')
     }
   }
 
@@ -77,7 +85,11 @@ export function CalendarDayPage() {
                   {row.scheduledTime ? <span className="bm-habit-item-time">{formatIsoTime12h(row.scheduledTime)}</span> : null}
                 </div>
                 <div style={{ marginTop: 10 }}>
-                  <StatusSelector value={row.status} onChange={(s) => onStatusChange(row, s)} />
+                  <StatusSelector
+                    value={row.status}
+                    disabled={isFuture}
+                    onChange={(s) => onStatusChange(row, s)}
+                  />
                 </div>
               </Card>
             </li>
