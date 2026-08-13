@@ -87,6 +87,25 @@ export interface BudgetSummary {
   overBy: Centavos
 }
 
+/**
+ * What counts against a monthly budget. One rule, in one place.
+ *
+ * Three screens used to answer this differently: Finance counted debt payments,
+ * Budget and Home did not, so the same month could read "₱1,000 left" and
+ * "₱5,000 left" depending on where you looked.
+ *
+ * The rule: a debt payment is spending. The money leaves and does not come
+ * back, which is what a budget measures. Moving money into savings is not
+ * spending and is deliberately absent here, because it is still yours: it
+ * belongs in Total Balance and nowhere near this figure.
+ */
+export function calculateBudgetSpend(
+  expenses: Array<{ amount: Centavos }>,
+  debtPayments: Array<{ amount: Centavos }> = [],
+): Centavos {
+  return addCentavos(...expenses.map((e) => e.amount), ...debtPayments.map((p) => p.amount))
+}
+
 /** Budget Remaining = Monthly Budget - Eligible Expenses. Never silently clamps to zero. */
 export function calculateBudgetRemaining(budget: Centavos, spent: Centavos): BudgetSummary {
   const remaining = budget - spent
