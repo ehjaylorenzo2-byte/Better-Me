@@ -7,7 +7,8 @@ import { ProgressRing } from '@/components/ui/Progress'
 import { StatusBadge } from '@/components/ui/StatusSelector'
 import { LoadingState, ErrorState, EmptyState } from '@/components/ui/States'
 import { getOccurrencesInRange } from '@/services/habits'
-import { getBudgetForMonth, listExpensesForMonth } from '@/services/finance'
+import { getEffectiveBudget, listExpensesForMonth } from '@/services/finance'
+import { listPaymentsForMonth } from '@/services/debt'
 import { getAvatarUrl } from '@/services/avatar'
 import { getUserPreferences } from '@/services/preferences'
 import { chipVarsForLabel } from '@/theme/categoryStyles'
@@ -18,7 +19,7 @@ import {
   getPhilippineToday,
   isoDateWeekday,
 } from '@/utils/timezone'
-import { calculateDailyProgress, calculateBudgetRemaining } from '@/utils/calculations'
+import { calculateDailyProgress, calculateBudgetRemaining, calculateBudgetSpend } from '@/utils/calculations'
 import { formatCurrency } from '@/utils/money'
 import { getMotivationMessage } from '@/utils/motivation'
 import type { HabitOccurrence, Habit, HabitSchedule, MotivationTone } from '@/types/models'
@@ -78,11 +79,12 @@ export function HomePage() {
     setError(null)
     try {
       const weekStart = startOfWeek(today)
-      const [todayData, weekData, budget, expenses, avatar, prefs] = await Promise.all([
+      const [todayData, weekData, budget, expenses, payments, avatar, prefs] = await Promise.all([
         getOccurrencesInRange(userId, today, today),
         getOccurrencesInRange(userId, weekStart, addDaysToIsoDate(weekStart, 6)),
-        getBudgetForMonth(userId, getCurrentPhilippineMonth()),
+        getEffectiveBudget(userId, getCurrentPhilippineMonth()),
         listExpensesForMonth(userId, getCurrentPhilippineMonth()),
+        listPaymentsForMonth(userId, getCurrentPhilippineMonth()),
         getAvatarUrl(userId),
         getUserPreferences(userId),
       ])
@@ -94,7 +96,8 @@ export function HomePage() {
       setHiddenCards(prefs.hiddenHomeCards)
 
       if (budget) {
-        const spent = expenses.reduce((sum, e) => sum + e.amount, 0)
+        // Same rule as the Finance and Budget screens: debt payments are spending.
+        const spent = calculateBudgetSpend(expenses, payments)
         const summary = calculateBudgetRemaining(budget.amount, spent)
         setOverBudget(summary.isOverBudget)
         setBudgetLine(
