@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { Workout, WorkoutExercise } from '@/types/models'
+import type { ExerciseMeasure, Workout, WorkoutExercise } from '@/types/models'
 import { getPhilippineToday, isFuturePhilippineDate, isPastPhilippineDate, type IsoDate } from '@/utils/timezone'
 
 function mapExercise(row: {
@@ -9,6 +9,7 @@ function mapExercise(row: {
   sets: number
   reps: number
   weight_kg: number
+  measure?: ExerciseMeasure
   notes: string | null
   order_index: number
 }): WorkoutExercise {
@@ -19,6 +20,7 @@ function mapExercise(row: {
     sets: row.sets,
     reps: row.reps,
     weightKg: row.weight_kg,
+    measure: row.measure ?? 'weight_reps',
     notes: row.notes,
     orderIndex: row.order_index,
   }
@@ -29,6 +31,10 @@ function mapWorkout(
     id: string
     user_id: string
     occurrence_id: string | null
+    habit_id?: string | null
+    routine_id?: string | null
+    started_at?: string | null
+    ended_at?: string | null
     workout_date: string
     duration_minutes: number | null
     notes: string | null
@@ -40,6 +46,10 @@ function mapWorkout(
     id: row.id,
     userId: row.user_id,
     occurrenceId: row.occurrence_id,
+    habitId: row.habit_id ?? null,
+    routineId: row.routine_id ?? null,
+    startedAt: row.started_at ?? null,
+    endedAt: row.ended_at ?? null,
     workoutDate: row.workout_date,
     durationMinutes: row.duration_minutes,
     notes: row.notes,
@@ -149,4 +159,64 @@ export async function completeWorkout(workoutId: string): Promise<Workout> {
   const { data, error } = await supabase.rpc('complete_workout', { p_workout_id: workoutId })
   if (error) throw error
   return mapWorkout(data, [])
+}
+
+/**
+ * Starts today's workout from a routine, copying its exercises in order.
+ *
+ * This is the whole point of routines: you built Push Day once, so training it
+ * again should not mean retyping five exercise names. The copy is deliberate
+ * rather than a live link, so editing the routine next week does not rewrite
+ * what you actually did today.
+ */
+export async function startWorkoutFromRoutine(
+  userId: string,
+  date: IsoDate,
+  routineId: string,
+): Promise<Workout> {
+  const workout = await getOrCreateWorkoutForDate(userId, date)
+
+  const { error: markError } = await supabase
+    .from('workouts')
+    .update({ routine_id: routineId, started_at: workout.startedAt ?? new Date().toISOString() })
+    .eq('id', workout.id)
+  if (markError) throw markError
+
+  // Only seed exercises into an empty workout, so re-entering the screen never
+  // duplicates what is already logged.
+  if (workout.exercises.length === 0) {
+    const { data: routineExercises, error } = await supabase
+      .from('routine_exercises')
+      .select('id, name, measure, sort_order')
+      .eq('routine_id', routineId)
+      .order('sort_order')
+    if (error) throw error
+
+    if ((routineExercises ?? []).length > 0) {
+      const rows = (routineExercises ?? []).map((re, index) => ({
+        workout_id: workout.id,
+        user_id: userId,
+        name: re.name,
+        measure: re.measure,
+        routine_exercise_id: re.id,
+        order_index: index,
+        sets: 0,
+        reps: 0,
+        weight_kg: 0,
+      }))
+      const { error: insertError } = await supabase.from('workout_exercises').insert(rows)
+      if (insertError) throw insertError
+    }
+  }
+
+  return getOrCreateWorkoutForDate(userId, date)
+}
+
+/** Stamps the end of the session so duration comes from the clock, not a guess. */
+export async function finishWorkoutClock(workoutId: string): Promise<void> {
+  const { error } = await supabase
+    .from('workouts')
+    .update({ ended_at: new Date().toISOString() })
+    .eq('id', workoutId)
+  if (error) throw error
 }
