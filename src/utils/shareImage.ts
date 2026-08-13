@@ -1,0 +1,426 @@
+/**
+ * The workout share image.
+ *
+ * Drawn on a canvas on this device, from numbers that are already on this
+ * device. Nothing is uploaded, no image service is called, and the file never
+ * leaves the phone unless the person taps Share or Download themselves. That is
+ * a deliberate constraint, not an oversight: a workout photo is personal.
+ *
+ * Everything is laid out against a 1080 x 1080 grid and scaled by one factor, so
+ * the same code can render a small preview and a full-size export without the
+ * proportions drifting between them.
+ */
+
+export const SHARE_SIZE = 1080
+
+export type ShareLayout = 'square' | 'overlay'
+
+export interface ShareTheme {
+  /** Page behind the type. Ignored when the background is transparent. */
+  bg: string
+  ink: string
+  dim: string
+  lime: string
+  /** Type that sits on the lime pill. */
+  onLime: string
+  rule: string
+}
+
+export const SHARE_THEMES: Record<'light' | 'dark', ShareTheme> = {
+  light: {
+    bg: '#F4F4F2',
+    ink: '#101208',
+    dim: '#63675B',
+    lime: '#D2F34C',
+    onLime: '#101208',
+    rule: 'rgba(16, 18, 8, 0.18)',
+  },
+  dark: {
+    bg: '#0E100C',
+    ink: '#F4F5F0',
+    dim: '#9BA192',
+    lime: '#D2F34C',
+    onLime: '#101208',
+    rule: 'rgba(244, 245, 240, 0.20)',
+  },
+}
+
+export interface ShareData {
+  /** Routine name, or a plain fallback when the workout was not from a routine. */
+  title: string
+  /** Already formatted for display, e.g. "Thursday, 13 August". */
+  dateLabel: string
+  /** Already formatted, e.g. "1h 18m". */
+  duration: string
+  setCount: number
+  totalReps: number
+  volumeGrams: number
+  /** One line at most, e.g. "Bench Press 80 kg". Empty when nothing was beaten. */
+  personalRecord?: string | null
+}
+
+export interface ShareOptions {
+  layout: ShareLayout
+  theme: 'light' | 'dark'
+  transparent: boolean
+  /** Optional photo, already loaded. Drawn cover-style under the overlay. */
+  photo?: CanvasImageSource | null
+}
+
+const FAMILY_BLACK = '"Creato Display Black", "Creato Display", system-ui, sans-serif'
+const FAMILY_MEDIUM = '"Creato Display Medium", "Creato Display", system-ui, sans-serif'
+const FAMILY_BOOK = '"Creato Display", system-ui, sans-serif'
+
+/**
+ * The webfonts have to be in memory before the first stroke, or the canvas
+ * silently falls back to a system face and the export looks nothing like the
+ * preview. Failures are swallowed: a share card in the wrong font still beats
+ * no share card.
+ */
+export async function ensureShareFonts(): Promise<void> {
+  if (typeof document === 'undefined' || !document.fonts) return
+  const faces = [`900 100px ${FAMILY_BLACK}`, `500 100px ${FAMILY_MEDIUM}`, `400 100px ${FAMILY_BOOK}`]
+  try {
+    await Promise.all(faces.map((face) => document.fonts.load(face)))
+    await document.fonts.ready
+  } catch {
+    // Keep going with whatever is available.
+  }
+}
+
+/**
+ * Letter-spaced text, drawn a character at a time.
+ *
+ * ctx.letterSpacing exists in current Chrome and Safari but not in every engine
+ * this app has to run in, and a tracked label that silently loses its tracking
+ * looks like a bug. Doing it by hand is a few lines and works everywhere.
+ */
+function drawTracked(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  spacing: number,
+): number {
+  let cursor = x
+  for (const char of text) {
+    ctx.fillText(char, cursor, y)
+    cursor += ctx.measureText(char).width + spacing
+  }
+  return cursor - x - spacing
+}
+
+function measureTracked(ctx: CanvasRenderingContext2D, text: string, spacing: number): number {
+  let width = 0
+  for (const char of text) width += ctx.measureText(char).width + spacing
+  return Math.max(0, width - spacing)
+}
+
+/** Shrinks a font until the text fits, so a long routine name never runs off. */
+function fitFont(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  family: string,
+  startPx: number,
+  maxWidth: number,
+  minPx: number,
+): number {
+  let size = startPx
+  ctx.font = `${size}px ${family}`
+  while (ctx.measureText(text).width > maxWidth && size > minPx) {
+    size -= 2
+    ctx.font = `${size}px ${family}`
+  }
+  return size
+}
+
+function formatKg(grams: number): string {
+  return Math.round(grams / 1000).toLocaleString('en-PH')
+}
+
+/** Cover-fit, the same rule CSS background-size: cover uses. */
+function drawPhotoCover(ctx: CanvasRenderingContext2D, photo: CanvasImageSource, size: number): void {
+  const source = photo as unknown as { width?: number; height?: number; videoWidth?: number; videoHeight?: number }
+  const w = source.width ?? source.videoWidth ?? size
+  const h = source.height ?? source.videoHeight ?? size
+  if (!w || !h) return
+  const scale = Math.max(size / w, size / h)
+  const dw = w * scale
+  const dh = h * scale
+  ctx.drawImage(photo, (size - dw) / 2, (size - dh) / 2, dw, dh)
+}
+
+/**
+ * Draws the whole card. The canvas is sized by the caller; everything scales
+ * from the 1080 grid so preview and export cannot disagree.
+ */
+export function drawShareImage(canvas: HTMLCanvasElement, data: ShareData, options: ShareOptions): void {
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  const size = canvas.width
+  const k = size / SHARE_SIZE
+  const t = SHARE_THEMES[options.theme]
+
+  ctx.clearRect(0, 0, size, size)
+  ctx.textBaseline = 'alphabetic'
+
+  if (options.photo) {
+    drawPhotoCover(ctx, options.photo, size)
+  } else if (!options.transparent) {
+    ctx.fillStyle = t.bg
+    ctx.fillRect(0, 0, size, size)
+  }
+
+  if (options.layout === 'overlay') {
+    drawOverlay(ctx, data, options, k, size)
+  } else {
+    drawSquare(ctx, data, options, k, size)
+  }
+}
+
+/**
+ * Square card, "numbers only": the four figures at the size they deserve and no
+ * exercise list. Lime appears exactly twice — the rule under the title and the
+ * record pill — so the card reads as Better Me without shouting.
+ */
+function drawSquare(
+  ctx: CanvasRenderingContext2D,
+  data: ShareData,
+  options: ShareOptions,
+  k: number,
+  size: number,
+): void {
+  const t = SHARE_THEMES[options.theme]
+  const pad = 76 * k
+  const contentWidth = size - pad * 2
+  let y = pad
+
+  // Brand
+  const dot = 14 * k
+  ctx.fillStyle = t.lime
+  ctx.beginPath()
+  ctx.arc(pad + dot / 2, y + 20 * k, dot / 2, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.fillStyle = t.dim
+  ctx.font = `500 ${26 * k}px ${FAMILY_MEDIUM}`
+  drawTracked(ctx, 'BETTER ME', pad + dot + 16 * k, y + 29 * k, 4 * k)
+  y += 96 * k
+
+  // Title
+  const titleSize = fitFont(ctx, data.title, FAMILY_BLACK, 92 * k, contentWidth, 52 * k)
+  ctx.fillStyle = t.ink
+  ctx.font = `900 ${titleSize}px ${FAMILY_BLACK}`
+  ctx.fillText(data.title, pad, y + titleSize * 0.82)
+  y += titleSize + 20 * k
+
+  // The single lime rule.
+  ctx.fillStyle = t.lime
+  ctx.fillRect(pad, y, 150 * k, 14 * k)
+  y += 14 * k + 30 * k
+
+  ctx.fillStyle = t.dim
+  ctx.font = `400 ${30 * k}px ${FAMILY_BOOK}`
+  ctx.fillText(data.dateLabel, pad, y + 24 * k)
+  y += 24 * k + 44 * k
+
+  // The headline figure.
+  const durSize = fitFont(ctx, data.duration, FAMILY_BLACK, 186 * k, contentWidth, 96 * k)
+  ctx.fillStyle = t.ink
+  ctx.font = `900 ${durSize}px ${FAMILY_BLACK}`
+  ctx.fillText(data.duration, pad, y + durSize * 0.78)
+
+  // The stats and the record are anchored to the bottom rather than stacked
+  // after the title, so a one-word routine name and a long one produce the same
+  // card instead of leaving a hole above the footer.
+  const pillHeight = 62 * k
+  const footerTop = size - pad - 30 * k
+  const pillTop = data.personalRecord ? footerTop - 34 * k - pillHeight : footerTop
+  const labelBaseline = pillTop - 54 * k
+  const valueBaseline = labelBaseline - 36 * k
+  const ruleY = valueBaseline - 46 * k
+
+  ctx.fillStyle = t.rule
+  ctx.fillRect(pad, ruleY, contentWidth, 2 * k)
+
+  const stats: Array<[string, string]> = [
+    [String(data.setCount), 'SETS'],
+    [String(data.totalReps), 'REPS'],
+    [formatKg(data.volumeGrams), 'KG LIFTED'],
+  ]
+  const column = contentWidth / stats.length
+  stats.forEach(([value, label], index) => {
+    const x = pad + column * index
+    ctx.fillStyle = t.ink
+    ctx.font = `900 ${54 * k}px ${FAMILY_BLACK}`
+    ctx.fillText(value, x, valueBaseline)
+    ctx.fillStyle = t.dim
+    ctx.font = `500 ${22 * k}px ${FAMILY_MEDIUM}`
+    drawTracked(ctx, label, x, labelBaseline, 2 * k)
+  })
+
+  if (data.personalRecord) {
+    drawPill(ctx, `New PR · ${data.personalRecord}`, pad, pillTop, k, t)
+  }
+
+  ctx.fillStyle = t.dim
+  ctx.font = `400 ${24 * k}px ${FAMILY_BOOK}`
+  ctx.fillText('betterme', pad, size - pad + 6 * k)
+}
+
+/**
+ * Compact overlay, bottom left, for dropping over your own photo.
+ *
+ * The dark fade is drawn only across the lower part of the frame, so the photo
+ * stays visible, and it is baked into the transparent PNG as real alpha rather
+ * than being faked with a flat rectangle.
+ */
+function drawOverlay(
+  ctx: CanvasRenderingContext2D,
+  data: ShareData,
+  options: ShareOptions,
+  k: number,
+  size: number,
+): void {
+  const t = SHARE_THEMES.dark
+  const pad = 74 * k
+
+  const scrim = ctx.createLinearGradient(0, size, 0, size * 0.38)
+  scrim.addColorStop(0, 'rgba(14, 16, 12, 0.88)')
+  scrim.addColorStop(0.45, 'rgba(14, 16, 12, 0.5)')
+  scrim.addColorStop(1, 'rgba(14, 16, 12, 0)')
+  ctx.fillStyle = scrim
+  ctx.fillRect(0, size * 0.38, size, size * 0.62)
+
+  let y = size - pad
+
+  ctx.fillStyle = 'rgba(244, 245, 240, 0.5)'
+  ctx.font = `500 ${22 * k}px ${FAMILY_MEDIUM}`
+  drawTracked(ctx, 'BETTER ME', pad, y, 4 * k)
+  y -= 46 * k
+
+  const stats = [
+    { value: String(data.setCount), label: ' sets' },
+    { value: String(data.totalReps), label: ' reps' },
+    { value: formatKg(data.volumeGrams), label: ' kg' },
+  ]
+  let x = pad
+  for (const stat of stats) {
+    ctx.fillStyle = 'rgba(244, 245, 240, 0.9)'
+    ctx.font = `900 ${30 * k}px ${FAMILY_BLACK}`
+    ctx.fillText(stat.value, x, y)
+    x += ctx.measureText(stat.value).width
+    ctx.font = `400 ${30 * k}px ${FAMILY_BOOK}`
+    ctx.fillText(stat.label, x, y)
+    x += ctx.measureText(stat.label).width + 44 * k
+  }
+  y -= 40 * k
+
+  const durSize = fitFont(ctx, data.duration, FAMILY_BLACK, 118 * k, size - pad * 2, 72 * k)
+  ctx.fillStyle = t.ink
+  ctx.font = `900 ${durSize}px ${FAMILY_BLACK}`
+  ctx.fillText(data.duration, pad, y)
+  y -= durSize * 0.86
+
+  const titleSize = fitFont(ctx, data.title, FAMILY_BLACK, 60 * k, size - pad * 2, 38 * k)
+  ctx.fillStyle = t.ink
+  ctx.font = `900 ${titleSize}px ${FAMILY_BLACK}`
+  ctx.fillText(data.title, pad, y)
+  // Cap height is roughly three quarters of the em, so clearing the ascender
+  // takes 0.82 rather than the half that put the rule through the letters.
+  y -= titleSize * 0.82
+
+  // The one thread of lime, above the title rather than through it.
+  ctx.fillStyle = t.lime
+  ctx.fillRect(pad, y - 18 * k, 110 * k, 10 * k)
+}
+
+function drawPill(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  k: number,
+  t: ShareTheme,
+): void {
+  ctx.font = `900 ${28 * k}px ${FAMILY_BLACK}`
+  const textWidth = ctx.measureText(text).width
+  const height = 62 * k
+  const width = textWidth + 52 * k
+  const radius = height / 2
+
+  ctx.fillStyle = t.lime
+  ctx.beginPath()
+  ctx.moveTo(x + radius, y)
+  ctx.lineTo(x + width - radius, y)
+  ctx.arc(x + width - radius, y + radius, radius, -Math.PI / 2, Math.PI / 2)
+  ctx.lineTo(x + radius, y + height)
+  ctx.arc(x + radius, y + radius, radius, Math.PI / 2, -Math.PI / 2)
+  ctx.closePath()
+  ctx.fill()
+
+  ctx.fillStyle = t.onLime
+  ctx.fillText(text, x + 26 * k, y + height / 2 + 10 * k)
+}
+
+/** A filename someone can find again in their downloads folder. */
+export function shareFileName(date: string, layout: ShareLayout): string {
+  return `betterme-workout-${date}${layout === 'overlay' ? '-overlay' : ''}.png`
+}
+
+/**
+ * Canvas to file.
+ *
+ * toBlob is the correct API but is missing or async-broken in a few older
+ * WebViews, so a data-URL path stands behind it. Download has to work every
+ * time; that is the whole point of having it separate from Share.
+ */
+export function canvasToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    if (typeof canvas.toBlob === 'function') {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob)
+        else fallback()
+      }, 'image/png')
+      return
+    }
+    fallback()
+
+    function fallback() {
+      try {
+        const url = canvas.toDataURL('image/png')
+        const base64 = url.split(',')[1] ?? ''
+        const binary = atob(base64)
+        const bytes = new Uint8Array(binary.length)
+        for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
+        resolve(new Blob([bytes], { type: 'image/png' }))
+      } catch (err) {
+        reject(err instanceof Error ? err : new Error('Could not build the image.'))
+      }
+    }
+  })
+}
+
+/** Saves the blob without needing any permission or plugin. */
+export function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  // Revoked on the next tick so Safari has finished reading it.
+  setTimeout(() => URL.revokeObjectURL(url), 4000)
+}
+
+/** True only when this browser can actually share a PNG file, not just a link. */
+export function canShareImageFile(): boolean {
+  if (typeof navigator === 'undefined' || typeof navigator.canShare !== 'function') return false
+  try {
+    const probe = new File([new Blob([''], { type: 'image/png' })], 'probe.png', { type: 'image/png' })
+    return navigator.canShare({ files: [probe] })
+  } catch {
+    return false
+  }
+}
