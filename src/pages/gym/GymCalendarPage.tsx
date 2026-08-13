@@ -4,7 +4,7 @@ import { useAuth } from '@/features/auth/AuthContext'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { LoadingState, ErrorState } from '@/components/ui/States'
 import { getWorkoutHistory } from '@/services/gym'
-import { getPhilippineToday } from '@/utils/timezone'
+import { formatIsoDateLong, getPhilippineToday } from '@/utils/timezone'
 import type { Workout } from '@/types/models'
 import './gym.css'
 import '../calendar/calendar.css'
@@ -95,6 +95,9 @@ export function GymCalendarPage() {
                   key={cell.date}
                   className={`bm-cal-cell ${completed ? 'bm-gym-cell-completed' : ''} ${cell.date === today ? 'bm-cal-cell-today' : ''}`}
                   onClick={() => navigate(`/gym/${cell.date}`)}
+                  // The emoji is decoration; a screen reader needs the day and
+                  // whether anything happened on it said out loud.
+                  aria-label={`${formatIsoDateLong(cell.date)}${completed ? ', workout completed' : ', no workout'}`}
                 >
                   <span className="bm-cal-day-num">{cell.day}</span>
                   {completed ? <span aria-hidden="true">💪</span> : null}
