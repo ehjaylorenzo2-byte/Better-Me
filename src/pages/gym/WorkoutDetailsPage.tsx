@@ -10,16 +10,24 @@ import { useToast } from '@/components/ui/Toast'
 import {
   addExercise,
   completeWorkout,
+  finishWorkoutClock,
   getOrCreateWorkoutForDate,
   isGymDateCompletable,
   isGymDateEditable,
   isGymFutureDate,
   removeExercise,
+  startWorkoutFromRoutine,
   updateWorkoutMeta,
 } from '@/services/gym'
+import { listRoutines } from '@/services/programs'
+import { listSetsForWorkout, formatVolume, getWorkoutTotals } from '@/services/workoutSets'
+import { getUserPreferences } from '@/services/preferences'
+import { ExerciseLogger } from '@/components/gym/ExerciseLogger'
+import { RestTimer } from '@/components/gym/RestTimer'
 import { formatIsoDateLong, getPhilippineToday } from '@/utils/timezone'
-import type { Workout } from '@/types/models'
+import type { Routine, Workout, WorkoutSet, WorkoutTotals } from '@/types/models'
 import './gym.css'
+import '@/components/gym/gym-log.css'
 
 export function WorkoutDetailsPage() {
   const params = useParams()
@@ -35,9 +43,13 @@ export function WorkoutDetailsPage() {
   const [duration, setDuration] = useState('')
 
   const [exName, setExName] = useState('')
-  const [exSets, setExSets] = useState('3')
-  const [exReps, setExReps] = useState('10')
-  const [exWeight, setExWeight] = useState('0')
+
+  const [setsByExercise, setSetsByExercise] = useState<Map<string, WorkoutSet[]>>(new Map())
+  const [totals, setTotals] = useState<WorkoutTotals | null>(null)
+  const [routines, setRoutines] = useState<Routine[]>([])
+  const [restSeconds, setRestSeconds] = useState<number | null>(null)
+  const [restDefault, setRestDefault] = useState(90)
+  const [restEnabled, setRestEnabled] = useState(true)
 
   const editable = isGymDateEditable(date)
   const completable = isGymDateCompletable(date)
@@ -52,6 +64,18 @@ export function WorkoutDetailsPage() {
       setWorkout(w)
       setNotes(w.notes ?? '')
       setDuration(w.durationMinutes ? String(w.durationMinutes) : '')
+
+      const [sets, workoutTotals, routineList, prefs] = await Promise.all([
+        listSetsForWorkout(w.id),
+        getWorkoutTotals(w.id),
+        listRoutines(userId),
+        getUserPreferences(userId),
+      ])
+      setSetsByExercise(sets)
+      setTotals(workoutTotals)
+      setRoutines(routineList)
+      setRestDefault(prefs.restSeconds)
+      setRestEnabled(prefs.restTimerEnabled)
     } catch {
       setError('Could not load this workout.')
     } finally {
@@ -67,17 +91,29 @@ export function WorkoutDetailsPage() {
   const onAddExercise = async () => {
     if (!workout || !userId || !exName.trim()) return
     try {
+      // Sets, reps and weight start at zero: what you actually do is logged set
+      // by set below, not guessed up front.
       await addExercise(
         workout.id,
         userId,
-        { name: exName, sets: Number(exSets) || 0, reps: Number(exReps) || 0, weightKg: Number(exWeight) || 0 },
+        { name: exName, sets: 0, reps: 0, weightKg: 0 },
         workout.exercises.length,
       )
       setExName('')
-      show('Exercise added.', 'success')
       load()
     } catch (err) {
       show(err instanceof Error ? err.message : 'Could not add exercise.', 'error')
+    }
+  }
+
+  const onUseRoutine = async (routineId: string) => {
+    if (!userId) return
+    try {
+      await startWorkoutFromRoutine(userId, date, routineId)
+      show('Routine loaded.', 'success')
+      load()
+    } catch (err) {
+      show(err instanceof Error ? err.message : 'Could not load that routine.', 'error')
     }
   }
 
@@ -85,6 +121,7 @@ export function WorkoutDetailsPage() {
     await removeExercise(id)
     load()
   }
+  void onRemoveExercise
 
   const onSaveMeta = async () => {
     if (!workout) return
@@ -98,9 +135,12 @@ export function WorkoutDetailsPage() {
   const onComplete = async () => {
     if (!workout) return
     try {
+      await finishWorkoutClock(workout.id)
       await completeWorkout(workout.id)
-      show('Workout completed. Gym habit marked Done.', 'success')
-      load()
+      // Deliberately not claiming the habit was marked: it only is when a gym
+      // habit exists and is scheduled today, and the old screen said so either
+      // way. The summary shows what actually happened.
+      navigate(`/gym/${date}/summary`)
     } catch (err) {
       show(err instanceof Error ? err.message : 'Only today\'s workout can be completed.', 'error')
     }
@@ -143,45 +183,70 @@ export function WorkoutDetailsPage() {
         ) : null}
       </Card>
 
-      <Card style={{ marginBottom: 14 }}>
-        <h3 style={{ fontSize: 14, marginBottom: 10 }}>Exercises</h3>
-        {workout.exercises.length === 0 ? (
-          <EmptyState message="No exercises yet." />
-        ) : (
-          <ul className="bm-exercise-list">
-            {workout.exercises.map((ex) => (
-              <li key={ex.id} className="bm-exercise-row">
-                <div>
-                  <p className="bm-exercise-name">{ex.name}</p>
-                  <p className="bm-exercise-meta">
-                    {ex.weightKg} kg · {ex.sets} sets · {ex.reps} reps
-                  </p>
-                  {ex.notes ? <p className="bm-exercise-meta">{ex.notes}</p> : null}
-                </div>
-                {editable ? (
-                  <button className="bm-link" onClick={() => onRemoveExercise(ex.id)}>
-                    Remove
-                  </button>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        )}
+      {totals && totals.setCount > 0 ? (
+        <Card className="bm-live-totals" style={{ marginBottom: 14 }}>
+          <span><strong className="num">{totals.exerciseCount}</strong> exercises</span>
+          <span><strong className="num">{totals.setCount}</strong> sets</span>
+          <span><strong className="num">{totals.totalReps}</strong> reps</span>
+          <span><strong className="num">{formatVolume(totals.volumeGrams)}</strong></span>
+        </Card>
+      ) : null}
 
-        {editable ? (
-          <div className="bm-add-exercise-form">
-            <Input label="Exercise name" value={exName} onChange={(e) => setExName(e.target.value)} placeholder="Bench Press" />
-            <div className="bm-exercise-inputs-row">
-              <Input label="Weight (kg)" type="number" min="0" value={exWeight} onChange={(e) => setExWeight(e.target.value)} />
-              <Input label="Sets" type="number" min="0" value={exSets} onChange={(e) => setExSets(e.target.value)} />
-              <Input label="Reps" type="number" min="0" value={exReps} onChange={(e) => setExReps(e.target.value)} />
-            </div>
-            <Button variant="secondary" fullWidth onClick={onAddExercise}>
-              Add Exercise
-            </Button>
+      {workout.exercises.length === 0 && routines.length > 0 && editable ? (
+        <Card style={{ marginBottom: 14 }}>
+          <h3 className="bm-section-title">Start from a routine</h3>
+          <p className="bm-entry-meta" style={{ marginBottom: 12 }}>
+            Loads its exercises in order, so you are not retyping them.
+          </p>
+          <div className="bm-routine-picks">
+            {routines.map((routine) => (
+              <button
+                key={routine.id}
+                type="button"
+                className="bm-routine-pick bm-press"
+                onClick={() => onUseRoutine(routine.id)}
+              >
+                {routine.name}
+              </button>
+            ))}
           </div>
-        ) : null}
-      </Card>
+        </Card>
+      ) : null}
+
+      {workout.exercises.length === 0 ? (
+        <EmptyState message="No exercises yet. Add one below, or start from a routine." />
+      ) : (
+        <div className="bm-ex-list">
+          {workout.exercises.map((ex) => (
+            <ExerciseLogger
+              key={ex.id}
+              userId={userId ?? ''}
+              exercise={ex}
+              sets={setsByExercise.get(ex.id) ?? []}
+              date={date}
+              editable={editable}
+              onChanged={load}
+              onSetLogged={() => {
+                if (restEnabled) setRestSeconds(restDefault)
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {editable ? (
+        <Card style={{ marginBottom: 14 }}>
+          <Input
+            label="Add an exercise"
+            value={exName}
+            onChange={(e) => setExName(e.target.value)}
+            placeholder="Bench Press"
+          />
+          <Button variant="secondary" fullWidth onClick={onAddExercise} style={{ marginTop: 10 }}>
+            Add exercise
+          </Button>
+        </Card>
+      ) : null}
 
       {completable && !workout.completed ? (
         <Button fullWidth onClick={onComplete}>
@@ -192,6 +257,11 @@ export function WorkoutDetailsPage() {
       <button className="bm-btn bm-btn-ghost bm-btn-full" onClick={() => navigate('/gym/calendar')} style={{ marginTop: 12 }}>
         View Gym Calendar
       </button>
+
+      <RestTimer
+        seconds={restSeconds}
+        onDismiss={() => setRestSeconds(null)}
+      />
     </div>
   )
 }
