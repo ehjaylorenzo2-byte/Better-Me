@@ -17,6 +17,7 @@ import { CalendarDayPage } from '@/pages/calendar/CalendarDayPage'
 
 import { WorkoutDetailsPage } from '@/pages/gym/WorkoutDetailsPage'
 import { GymCalendarPage } from '@/pages/gym/GymCalendarPage'
+import { WorkoutSummaryPage } from '@/pages/gym/WorkoutSummaryPage'
 
 import { FinanceOverviewPage } from '@/pages/finance/FinanceOverviewPage'
 import { IncomePage } from '@/pages/finance/IncomePage'
@@ -96,6 +97,7 @@ function App() {
 
         <Route path="/gym" element={<WorkoutDetailsPage />} />
         <Route path="/gym/calendar" element={<GymCalendarPage />} />
+        <Route path="/gym/:date/summary" element={<WorkoutSummaryPage />} />
         <Route path="/gym/:date" element={<WorkoutDetailsPage />} />
 
         <Route path="/finance" element={<FinanceOverviewPage />} />
