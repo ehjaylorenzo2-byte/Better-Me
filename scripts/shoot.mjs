@@ -290,6 +290,7 @@ async function main() {
       ['savings-goal-edit', '/savings/s2/edit'],
       ['gym-workout', '/gym'],
       ['gym-summary', `/gym/${day(0)}/summary`],
+      ['gym-share', `/gym/${day(0)}/share`],
       ['profile', '/profile'],
       ['profile-motivation', '/profile/motivation'],
       ['profile-home-screen', '/profile/home-screen'],
