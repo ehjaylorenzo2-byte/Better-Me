@@ -1,0 +1,374 @@
+/**
+ * Per-set logging, the rest timer, and the workout summary.
+ *
+ * Built to be usable one-handed, mid-set, with a phone you are half looking at.
+ * Numbers are tabular so the columns line up as they change.
+ */
+
+.bm-ex-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.bm-ex-card {
+  padding: var(--space-4);
+}
+
+.bm-ex-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.bm-ex-name {
+  font-size: 16px;
+  font-family: var(--font-bold);
+}
+
+.bm-ex-prev-label {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+/* ---- The set table ---- */
+.bm-set-table {
+  display: flex;
+  flex-direction: column;
+}
+
+.bm-set-row {
+  display: grid;
+  grid-template-columns: 34px 1fr 1fr 32px;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.bm-set-row:last-child {
+  border-bottom: none;
+}
+
+.bm-set-row.is-header {
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  padding-bottom: var(--space-1);
+}
+
+.bm-set-num {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.bm-set-prev {
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+.bm-set-today {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  font-size: 15px;
+  font-family: var(--font-medium);
+  color: var(--text-primary);
+  text-align: left;
+  background: none;
+  border: none;
+  padding: var(--space-1) 0;
+  min-height: 32px;
+}
+
+/* A set you did not count is struck through rather than hidden, so the record
+   of the attempt survives. Never colour alone. The line sits on the value only;
+   the label underneath explains it in words. */
+.bm-set-row.is-skipped .bm-set-value {
+  text-decoration: line-through;
+}
+
+.bm-set-row.is-skipped .bm-set-today {
+  color: var(--text-tertiary);
+}
+
+.bm-set-flag {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  color: var(--text-tertiary);
+}
+
+.bm-set-row.is-ghost {
+  opacity: 0.55;
+}
+
+.bm-set-remove {
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  font-size: 20px;
+  line-height: 1;
+  min-width: 32px;
+  min-height: 32px;
+}
+
+/* ---- Entering a set ---- */
+.bm-set-entry {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.bm-set-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1;
+  min-width: 0;
+}
+
+.bm-set-field span {
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.bm-set-field input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-primary);
+  /* 16px stops iOS zooming in when the field takes focus. */
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.bm-set-add {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  border: none;
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  font-family: var(--font-medium);
+  font-size: 14px;
+}
+
+.bm-set-add:disabled {
+  opacity: 0.55;
+}
+
+/* ---- Live totals while you train ---- */
+.bm-live-totals {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.bm-live-totals strong {
+  display: block;
+  font-size: 17px;
+  font-family: var(--font-bold);
+  color: var(--text-primary);
+}
+
+/* ---- Picking a routine ---- */
+.bm-routine-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.bm-routine-pick {
+  padding: 0 var(--space-4);
+  min-height: 44px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-family: var(--font-medium);
+  font-size: 14px;
+}
+
+/* ---- Rest timer ----
+   Sits above the bottom bar so it never covers the set you are entering. */
+.bm-rest {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--nav-height) + var(--safe-bottom) + var(--space-2));
+  width: min(calc(var(--column) - 36px), calc(100vw - 36px));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  box-shadow: var(--shadow-elevated);
+  z-index: 600;
+}
+
+.bm-rest.is-done {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.bm-rest-left {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
+.bm-rest-label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.bm-rest-clock {
+  font-size: 22px;
+  font-family: var(--font-bold);
+}
+
+.bm-rest-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.bm-rest-btn {
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  font-family: var(--font-medium);
+}
+
+/* The filled pill is always the inverse of the panel it sits on, stated
+   explicitly rather than through currentColor. The earlier version reached for
+   lime as a text colour on the finished state, which the contrast test caught:
+   a filled pill is a fill, so the label takes the page background instead. */
+.bm-rest-btn.is-primary {
+  background: var(--bg-primary);
+  border-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.bm-rest.is-done .bm-rest-btn.is-primary {
+  background: var(--text-primary);
+  border-color: var(--text-primary);
+  color: var(--bg-primary);
+}
+
+/* ---- Summary ---- */
+.bm-summary-hero {
+  text-align: center;
+  margin-bottom: var(--space-4);
+}
+
+.bm-summary-routine {
+  font-family: var(--font-bold);
+  font-size: 26px;
+  letter-spacing: -0.02em;
+}
+
+.bm-summary-date {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: var(--space-1);
+}
+
+.bm-summary-duration {
+  font-size: 34px;
+  font-family: var(--font-bold);
+  margin-top: var(--space-3);
+}
+
+.bm-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.bm-summary-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.bm-summary-stat-value {
+  font-size: 16px;
+  font-family: var(--font-bold);
+}
+
+.bm-summary-stat-label {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.bm-pr-card {
+  background: var(--accent-tint);
+  border: 1px solid var(--accent);
+  margin-bottom: var(--space-4);
+}
+
+.bm-pr-title {
+  font-family: var(--font-bold);
+  font-size: 15px;
+  color: var(--accent-text);
+  margin-bottom: var(--space-2);
+}
+
+.bm-pr-line {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  padding: 2px 0;
+}
+
+.bm-summary-ex {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  font-size: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.bm-summary-ex:last-child {
+  border-bottom: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bm-rest {
+    transition: none;
+  }
+}
