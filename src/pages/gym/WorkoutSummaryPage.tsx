@@ -4,7 +4,7 @@ import { useAuth } from '@/features/auth/AuthContext'
 import { Card } from '@/components/ui/Card'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { LoadingState, ErrorState } from '@/components/ui/States'
-import { getOrCreateWorkoutForDate } from '@/services/gym'
+import { getWorkoutForDate } from '@/services/gym'
 import { listRoutines } from '@/services/programs'
 import {
   findNewRecords,
@@ -47,7 +47,11 @@ export function WorkoutSummaryPage() {
     setLoading(true)
     setError(null)
     try {
-      const workout = await getOrCreateWorkoutForDate(userId, date)
+      const workout = await getWorkoutForDate(userId, date)
+      if (!workout) {
+        setError('There is no workout saved for this day.')
+        return
+      }
       const [workoutTotals, exerciseTotals, personalRecords, routines] = await Promise.all([
         getWorkoutTotals(workout.id),
         getExerciseTotals(workout.id),
