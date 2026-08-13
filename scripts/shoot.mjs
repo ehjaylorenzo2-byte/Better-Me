@@ -155,7 +155,7 @@ const FIXTURES = {
       workout_date: day(0),
       duration_minutes: 78,
       notes: null,
-      completed: false,
+      completed: true,
       created_at: '',
       workout_exercises: [
         { id: 'wex1', workout_id: 'w1', user_id: USER, name: 'Bench Press', sets: 3, reps: 10, weight_kg: 80, measure: 'weight_reps', routine_exercise_id: null, notes: null, order_index: 0 },
