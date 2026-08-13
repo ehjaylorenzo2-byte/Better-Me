@@ -71,6 +71,29 @@ export function isGymFutureDate(date: IsoDate, today: IsoDate = getPhilippineTod
   return isFuturePhilippineDate(date, today)
 }
 
+/**
+ * Reads a day's workout without creating one.
+ *
+ * The summary and share screens must never write. They are pages you come back
+ * to — days later, from a link, after the app has been closed and reopened —
+ * and getOrCreateWorkoutForDate would try to INSERT a row when it found none,
+ * which for a past date the database correctly refuses. The screen then said
+ * "Could not load this workout" about a workout that was sitting right there.
+ */
+export async function getWorkoutForDate(userId: string, date: IsoDate): Promise<Workout | null> {
+  const { data, error } = await supabase
+    .from('workouts')
+    .select('*, workout_exercises(*)')
+    .eq('user_id', userId)
+    .eq('workout_date', date)
+    .maybeSingle()
+  if (error) throw error
+  if (!data) return null
+
+  const { workout_exercises, ...rest } = data as typeof data & { workout_exercises: unknown[] }
+  return mapWorkout(rest, ((workout_exercises ?? []) as Parameters<typeof mapExercise>[0][]).map(mapExercise))
+}
+
 export async function getOrCreateWorkoutForDate(userId: string, date: IsoDate): Promise<Workout> {
   const { data: existing, error: fetchError } = await supabase
     .from('workouts')
