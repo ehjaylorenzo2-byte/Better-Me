@@ -14,7 +14,7 @@ import {
   listSchedulesForHabit,
   setOccurrenceStatus,
 } from '@/services/habits'
-import { describeSchedule } from '@/utils/recurrence'
+import { describeSchedule, scheduleAppliesOnDate } from '@/utils/recurrence'
 import { formatIsoTime12h, getPhilippineToday, weekdayLabel } from '@/utils/timezone'
 import { calculateDoneRate, tallyStatuses } from '@/utils/calculations'
 import type { Habit, HabitOccurrence, HabitSchedule, HabitStatus } from '@/types/models'
@@ -64,14 +64,23 @@ export function HabitDetailsPage() {
     return tallyStatuses(last7.map((h) => h.status))
   }, [history])
 
-  const onStatusChange = async (status: HabitStatus) => {
+  // This page always acts on today, so the only rule that can bite is whether
+  // the habit is scheduled today at all. It used to offer the buttons
+  // regardless, which let a Monday habit be marked Done on a Sunday.
+  const scheduledToday = schedule ? scheduleAppliesOnDate(schedule, today) : false
+
+  const onStatusChange = async (status: HabitStatus | null) => {
     if (!habit || !schedule) return
+    if (!scheduledToday) {
+      show('This habit is not scheduled today.', 'error')
+      return
+    }
     try {
       await setOccurrenceStatus(habit.id, schedule.id, today, schedule.time, status)
-      show('Status updated.', 'success')
+      show(status ? 'Status updated.' : 'Status cleared.', 'success')
       load()
-    } catch {
-      show('Could not update status.', 'error')
+    } catch (err) {
+      show(err instanceof Error ? err.message : 'Could not update status.', 'error')
     }
   }
 
@@ -118,7 +127,16 @@ export function HabitDetailsPage() {
 
       <Card style={{ marginBottom: 14 }}>
         <h3 style={{ fontSize: 14, marginBottom: 10 }}>Today's status</h3>
-        <StatusSelector value={todayEntry?.status ?? null} onChange={onStatusChange} />
+        <StatusSelector
+          value={todayEntry?.status ?? null}
+          disabled={!scheduledToday}
+          onChange={onStatusChange}
+        />
+        {!scheduledToday && schedule ? (
+          <p className="bm-entry-meta" style={{ marginTop: 8 }}>
+            Not scheduled today. {describeSchedule(schedule)} is when this one runs.
+          </p>
+        ) : null}
       </Card>
 
       <Card style={{ marginBottom: 14 }}>

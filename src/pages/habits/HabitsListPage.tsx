@@ -12,6 +12,7 @@ import {
   formatIsoDateLong,
   formatIsoTime12h,
   getPhilippineToday,
+  isFuturePhilippineDate,
   isoDateWeekday,
 } from '@/utils/timezone'
 import { calculateDailyProgress } from '@/utils/calculations'
@@ -67,13 +68,19 @@ export function HabitsListPage() {
 
   const progress = useMemo(() => calculateDailyProgress(rows.map((r) => r.status)), [rows])
 
-  const onStatusChange = async (row: Row, status: HabitStatus) => {
+  const onStatusChange = async (row: Row, status: HabitStatus | null) => {
+    // A day that has not happened yet cannot be decided. The database refuses
+    // it too; this just says so before the round trip.
+    if (isFuturePhilippineDate(row.occurrenceDate)) {
+      show('That day has not happened yet.', 'error')
+      return
+    }
     try {
       await setOccurrenceStatus(row.habitId, row.scheduleId, row.occurrenceDate, row.scheduledTime, status)
-      show(`${row.habit.name} marked ${status}.`, 'success')
+      show(status ? `${row.habit.name} marked ${status}.` : `${row.habit.name} cleared.`, 'success')
       load()
-    } catch {
-      show('Could not update status. Try again.', 'error')
+    } catch (err) {
+      show(err instanceof Error ? err.message : 'Could not update status. Try again.', 'error')
     }
   }
 
@@ -147,7 +154,11 @@ export function HabitsListPage() {
                           <span className="bm-habit-item-time">{formatIsoTime12h(row.scheduledTime)}</span>
                         ) : null}
                       </div>
-                      <StatusSelector value={row.status} onChange={(s) => onStatusChange(row, s)} />
+                      <StatusSelector
+                        value={row.status}
+                        disabled={isFuturePhilippineDate(row.occurrenceDate)}
+                        onChange={(s) => onStatusChange(row, s)}
+                      />
                     </Card>
                   </li>
                 ))}

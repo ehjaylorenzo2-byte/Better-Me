@@ -16,6 +16,19 @@ import { getPhilippineToday, weekdayLabel } from '@/utils/timezone'
 import type { Recurrence, HabitSchedule } from '@/types/models'
 import './habits.css'
 
+/**
+ * Only 'gym' carries behaviour; the rest are labels. Kept as a short list
+ * rather than free text so the gym one is discoverable, which matters because
+ * without a gym habit the whole workout link does nothing.
+ */
+const CATEGORY_OPTIONS = [
+  { value: 'general', label: 'General' },
+  { value: 'gym', label: 'Gym' },
+  { value: 'health', label: 'Health' },
+  { value: 'study', label: 'Study' },
+  { value: 'money', label: 'Money' },
+]
+
 const RECURRENCE_OPTIONS: Array<{ value: Recurrence; label: string }> = [
   { value: 'once', label: 'One time' },
   { value: 'daily', label: 'Daily' },
@@ -38,6 +51,9 @@ export function AddEditHabitPage() {
   const [time, setTime] = useState('')
   const [startDate, setStartDate] = useState(searchParams.get('date') || getPhilippineToday())
   const [reminderEnabled, setReminderEnabled] = useState(true)
+  // 'gym' is the only category with behaviour attached: it is what connects a
+  // habit to the workout tracker. Everything else is a label.
+  const [category, setCategory] = useState('general')
   const [currentSchedule, setCurrentSchedule] = useState<HabitSchedule | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
@@ -51,6 +67,7 @@ export function AddEditHabitPage() {
         if (habit) {
           setName(habit.name)
           setDescription(habit.description ?? '')
+          setCategory(habit.category ?? 'general')
         }
         const active = schedules[schedules.length - 1] ?? null
         if (active) {
@@ -111,6 +128,7 @@ export function AddEditHabitPage() {
         await createHabit({
           userId,
           name,
+          category,
           description: description.trim() || null,
           recurrence,
           weekdays: recurrence === 'weekly' ? weekdays : null,
@@ -141,6 +159,29 @@ export function AddEditHabitPage() {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
+
+        <div className="bm-field">
+          <span className="bm-label">Type</span>
+          <div className="bm-recurrence-options">
+            {CATEGORY_OPTIONS.map((opt) => (
+              <button
+                type="button"
+                key={opt.value}
+                className={`bm-recurrence-opt ${category === opt.value ? 'active' : ''}`}
+                onClick={() => setCategory(opt.value)}
+                aria-pressed={category === opt.value}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {category === 'gym' ? (
+            <p className="bm-entry-meta" style={{ marginTop: 8 }}>
+              Gym habits are linked to the workout tracker: finishing a workout marks this habit done
+              for that day, and only this one.
+            </p>
+          ) : null}
+        </div>
 
         <div className="bm-field">
           <span className="bm-label">Recurrence</span>
