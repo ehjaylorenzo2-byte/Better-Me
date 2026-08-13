@@ -111,12 +111,79 @@ const FIXTURES = {
     { id: ACC.bpi, user_id: USER, balance_centavos: 3700000 },
     { id: ACC.cash, user_id: USER, balance_centavos: -18500 },
   ],
-  user_preferences: [{ user_id: USER, theme: 'system', default_budget_centavos: null }],
+  user_preferences: [{ user_id: USER, theme: 'system', default_budget_centavos: null, rest_seconds: 90, rest_timer_enabled: true }],
+  programs: [{ id: 'pr1', user_id: USER, name: 'Push Pull Legs', notes: null, archived: false, sort_order: 0, created_at: '' }],
+  routines: [
+    { id: 'ro1', user_id: USER, program_id: 'pr1', name: 'Push Day', routine_note: 'Increase weight once all sets hit 10.', archived: false, sort_order: 0, created_at: '' },
+    { id: 'ro2', user_id: USER, program_id: 'pr1', name: 'Leg Day', routine_note: null, archived: false, sort_order: 1, created_at: '' },
+  ],
+  routine_exercises: [],
+  workout_sets: [
+    { id: 'ws1', user_id: USER, workout_exercise_id: 'wex1', set_number: 1, weight_grams: 80000, reps: 10, duration_seconds: null, distance_metres: null, completed: true, created_at: '' },
+    { id: 'ws2', user_id: USER, workout_exercise_id: 'wex1', set_number: 2, weight_grams: 80000, reps: 10, duration_seconds: null, distance_metres: null, completed: true, created_at: '' },
+    { id: 'ws3', user_id: USER, workout_exercise_id: 'wex1', set_number: 3, weight_grams: 75000, reps: 8, duration_seconds: null, distance_metres: null, completed: true, created_at: '' },
+    { id: 'ws4', user_id: USER, workout_exercise_id: 'wex2', set_number: 1, weight_grams: null, reps: null, duration_seconds: 120, distance_metres: null, completed: true, created_at: '' },
+    { id: 'ws5', user_id: USER, workout_exercise_id: 'wex2', set_number: 2, weight_grams: null, reps: null, duration_seconds: 90, distance_metres: null, completed: false, created_at: '' },
+  ],
+  workout_exercise_totals: [
+    { workout_exercise_id: 'wex1', workout_id: 'w1', user_id: USER, name: 'Bench Press', measure: 'weight_reps', set_count: 3, total_reps: 28, volume_grams: 2200000, total_seconds: 0, total_metres: 0, best_weight_grams: 80000, best_reps: 10 },
+    // Plank carries real minutes and a deliberate zero volume: weight × reps
+    // does not apply, so it must not invent kilograms.
+    { workout_exercise_id: 'wex2', workout_id: 'w1', user_id: USER, name: 'Plank', measure: 'duration', set_count: 1, total_reps: 0, volume_grams: 0, total_seconds: 120, total_metres: 0, best_weight_grams: null, best_reps: null },
+  ],
+  workout_totals: [
+    { workout_id: 'w1', user_id: USER, workout_date: day(0), completed: true, exercise_count: 5, set_count: 16, total_reps: 142, volume_grams: 8420000, total_seconds: 120, total_metres: 0, duration_minutes: 78 },
+  ],
+  exercise_records: [
+    { user_id: USER, key: 'bench press', name: 'Bench Press', best_weight_grams: 80000, best_reps: 10, best_volume_grams: 2200000, last_done: day(0) },
+  ],
+  workout_exercises: [
+    { id: 'wex1', workout_id: 'w1', user_id: USER, name: 'Bench Press', sets: 3, reps: 10, weight_kg: 80, measure: 'weight_reps', routine_exercise_id: null, notes: null, order_index: 0 },
+    { id: 'wex2', workout_id: 'w1', user_id: USER, name: 'Plank', sets: 2, reps: 0, weight_kg: 0, measure: 'duration', routine_exercise_id: null, notes: null, order_index: 1 },
+  ],
+  // PostgREST returns the embed inline, so the fixture has to as well: the page
+  // reads workout.workout_exercises, and an absent key is not an empty list.
+  workouts: [
+    {
+      id: 'w1',
+      user_id: USER,
+      occurrence_id: null,
+      habit_id: null,
+      routine_id: 'ro1',
+      started_at: '2026-08-13T01:00:00Z',
+      ended_at: null,
+      workout_date: day(0),
+      duration_minutes: 78,
+      notes: null,
+      completed: false,
+      created_at: '',
+      workout_exercises: [
+        { id: 'wex1', workout_id: 'w1', user_id: USER, name: 'Bench Press', sets: 3, reps: 10, weight_kg: 80, measure: 'weight_reps', routine_exercise_id: null, notes: null, order_index: 0 },
+        { id: 'wex2', workout_id: 'w1', user_id: USER, name: 'Plank', sets: 2, reps: 0, weight_kg: 0, measure: 'duration', routine_exercise_id: null, notes: null, order_index: 1 },
+      ],
+    },
+  ],
   notification_preferences: [{ user_id: USER }],
   habits: [],
   habit_schedules: [],
   habit_occurrences: [],
   category_budgets: [],
+}
+
+// Functions, not tables. Keyed by name so a screen that leans on one gets a
+// realistic answer instead of null.
+const RPC_FIXTURES = {
+  previous_exercise_sets: (body) =>
+    String(body?.p_name ?? '').toLowerCase() === 'plank'
+      ? [
+          { set_number: 1, weight_grams: null, reps: null, duration_seconds: 105, distance_metres: null, workout_date: day(-3) },
+          { set_number: 2, weight_grams: null, reps: null, duration_seconds: 90, distance_metres: null, workout_date: day(-3) },
+        ]
+      : [
+          { set_number: 1, weight_grams: 77500, reps: 10, duration_seconds: null, distance_metres: null, workout_date: day(-3) },
+          { set_number: 2, weight_grams: 77500, reps: 9, duration_seconds: null, distance_metres: null, workout_date: day(-3) },
+          { set_number: 3, weight_grams: 75000, reps: 8, duration_seconds: null, distance_metres: null, workout_date: day(-3) },
+        ],
 }
 
 async function main() {
@@ -142,7 +209,25 @@ async function main() {
         return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({}) })
       }
       if (url.pathname.startsWith('/rest/v1/rpc/')) {
-        return route.fulfill({ status: 200, contentType: 'application/json', body: 'null' })
+        const fn = url.pathname.replace('/rest/v1/rpc/', '')
+        const rpc = RPC_FIXTURES[fn]
+        let body = null
+        if (typeof rpc === 'function') {
+          let payload = {}
+          try {
+            payload = JSON.parse(route.request().postData() ?? '{}')
+          } catch {
+            payload = {}
+          }
+          body = rpc(payload)
+        } else if (rpc) {
+          body = rpc
+        }
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(body),
+        })
       }
       const table = url.pathname.replace('/rest/v1/', '')
       const rows =
@@ -203,6 +288,8 @@ async function main() {
       ['savings', '/savings'],
       ['savings-goal', '/savings/s1'],
       ['savings-goal-edit', '/savings/s2/edit'],
+      ['gym-workout', '/gym'],
+      ['gym-summary', `/gym/${day(0)}/summary`],
       ['profile', '/profile'],
       ['profile-motivation', '/profile/motivation'],
       ['profile-home-screen', '/profile/home-screen'],
