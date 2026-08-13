@@ -63,13 +63,17 @@ Open the printed local URL. The dev server is not a full PWA install target (ins
 1. Create a new project at [supabase.com](https://supabase.com) (free tier).
 2. Project Settings -> API: copy the **Project URL** and **anon public key** into `.env.local` as `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
 3. **Disable email confirmation** (this is a private app with synthetic internal emails, not real ones): Authentication -> Providers -> Email -> turn off "Confirm email".
-4. **Database setup**: open the SQL Editor, paste the entire contents of
-   **`supabase/SETUP.sql`**, and click Run. That one file creates all 16 tables,
-   all 18 RLS policies, and every function in a single pass.
+4. **Database setup**: run every file in `supabase/migrations/` **in numbered
+   order**, from `0001` upwards, either through the SQL Editor one at a time or
+   with the CLI (`supabase link --project-ref YOUR_REF` then `supabase db push`).
+   Each file is written to be safe to re-run, so a repeat is harmless.
 
-   (`SETUP.sql` is just `migrations/0001_init.sql` + `migrations/0002_functions_triggers.sql`
-   concatenated. If you prefer the Supabase CLI: `supabase link --project-ref YOUR_REF`
-   then `supabase db push`, which uses the numbered migration files instead.)
+   > **Do not use `supabase/SETUP.sql`.** It is a stale snapshot of `0001` and
+   > `0002` only. A database built from it has no wallets, no savings entry
+   > dates, none of the gym set tables and no `reminder_deliveries`, and it
+   > still defines the superseded three-argument money RPCs — so reminders
+   > answer `{"ok": true}` while silently sending nothing, and later migrations
+   > fail on top of it. It is kept only until it can be deleted.
 5. That's it for RLS -- every user-owned table already has Row Level Security enabled with `auth.uid() = user_id` policies from the migration. Nothing else to toggle.
 
 ### How username/password auth works without emails
@@ -92,6 +96,11 @@ returns a boolean).
    npx web-push generate-vapid-keys
    ```
 2. Put the **public** key in `.env.local` as `VITE_VAPID_PUBLIC_KEY` (and in your hosting provider's environment variables for production).
+
+   > Vite bakes `VITE_*` values into the bundle **at build time**, so adding the
+   > variable in Vercel is not enough on its own — you have to redeploy
+   > afterwards or the shipped app will still have no key and the Enable button
+   > will fail without saying why.
 3. Deploy the reminder Edge Function:
    ```bash
    supabase functions deploy send-reminders --no-verify-jwt
@@ -99,6 +108,15 @@ returns a boolean).
    ```
 4. Schedule it to run every 5 minutes: Supabase Dashboard -> Edge Functions -> `send-reminders` -> Cron -> `*/5 * * * *`. (If your project doesn't have the Cron UI yet, use `pg_cron` + `pg_net` to `POST` the function URL on the same schedule -- both are free on Supabase's free tier.)
 5. In the app, go to Profile -> Notification Settings -> **Enable Push Notifications** on each device that should receive reminders.
+
+**What actually gets sent.** An hour before any scheduled habit, once per
+schedule per day — a habit with a morning and an evening schedule gets both. A
+midday list of everything still unmarked, sent once between 12:00 and 13:00
+Philippine time. And an evening nudge between 20:00 and 21:00 on days with no
+income or expense recorded at all, which is what the Finance reminders switch
+controls. Every send is written to `reminder_deliveries` first and a unique
+index makes a second send impossible, which is what allows a run to reach back
+up to an hour and pick up anything a missed cron tick dropped.
 
 Without this setup, the app still works fully -- you just won't get push reminders when the app isn't open.
 
