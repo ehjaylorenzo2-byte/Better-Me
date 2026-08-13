@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/Card'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { LoadingState, ErrorState } from '@/components/ui/States'
 import { useToast } from '@/components/ui/Toast'
-import { getOrCreateWorkoutForDate } from '@/services/gym'
+import { getWorkoutForDate } from '@/services/gym'
 import { listRoutines } from '@/services/programs'
 import {
   findNewRecords,
@@ -26,6 +26,8 @@ import {
   type ShareData,
   type ShareLayout,
 } from '@/utils/shareImage'
+import { getUserPreferences } from '@/services/preferences'
+import { getWorkoutShareLine } from '@/utils/motivation'
 import { formatIsoDateLong, getPhilippineToday } from '@/utils/timezone'
 import './gym.css'
 import '@/components/gym/gym-log.css'
@@ -52,9 +54,19 @@ export function ShareWorkoutPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const [layout, setLayout] = useState<ShareLayout>('square')
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark')
-  const [transparent, setTransparent] = useState(false)
+  // Remembered between visits, so coming back to this page a day later gives
+  // you the card you last made rather than the default one.
+  const [layout, setLayout] = useState<ShareLayout>(() => readChoice('layout', 'square') as ShareLayout)
+  const [theme, setTheme] = useState<'light' | 'dark'>(
+    () => readChoice('theme', 'dark') as 'light' | 'dark',
+  )
+  const [transparent, setTransparent] = useState(() => readChoice('transparent', 'no') === 'yes')
+
+  useEffect(() => {
+    writeChoice('layout', layout)
+    writeChoice('theme', theme)
+    writeChoice('transparent', transparent ? 'yes' : 'no')
+  }, [layout, theme, transparent])
   const [photoName, setPhotoName] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [nudge, setNudge] = useState(0)
@@ -64,36 +76,69 @@ export function ShareWorkoutPage() {
     setLoading(true)
     setError(null)
     try {
-      const workout = await getOrCreateWorkoutForDate(userId, date)
-      const [totals, exerciseTotals, records, routines] = await Promise.all([
+      const workout = await getWorkoutForDate(userId, date)
+      if (!workout) {
+        setError('There is no workout saved for this day.')
+        return
+      }
+      const [totals, exerciseTotals, records, routines, prefs] = await Promise.all([
         getWorkoutTotals(workout.id),
         getExerciseTotals(workout.id),
         listPersonalRecords(userId),
         listRoutines(userId, { includeArchived: true }),
+        getUserPreferences(userId),
       ])
       if (!totals || totals.setCount === 0) {
         setError('There is nothing logged for this day yet.')
         return
       }
 
-      const beaten = findNewRecords(exerciseTotals, records)
-      const best = beaten[0]
-      const record = best
-        ? best.kind === 'weight'
-          ? `${best.name} ${gramsToKg(best.valueGrams ?? 0)} kg`
-          : best.kind === 'reps'
-            ? `${best.name} ${best.reps} reps`
-            : `${best.name} best ever`
-        : null
+      // Records are the point of the card, so they are described in the units
+      // the exercise is actually measured in. A record on a plank is minutes,
+      // not kilograms.
+      const beaten = findNewRecords(exerciseTotals, records).map((record) => ({
+        name: record.name,
+        detail:
+          record.kind === 'weight'
+            ? `${gramsToKg(record.valueGrams ?? 0)} kg${record.reps ? ` × ${record.reps}` : ''}`
+            : record.kind === 'reps'
+              ? `${record.reps} reps`
+              : 'best ever',
+      }))
+
+      // Only used when there was no record. Deliberately the single best set
+      // rather than a total, and never labelled as a record on the card.
+      const heaviest = [...exerciseTotals]
+        .filter((e) => e.setCount > 0)
+        .sort((a, b) => (b.bestWeightGrams ?? 0) - (a.bestWeightGrams ?? 0))[0]
+      const highlight =
+        beaten.length === 0 && heaviest
+          ? {
+              name: heaviest.name,
+              detail:
+                heaviest.measure === 'weight_reps'
+                  ? `${gramsToKg(heaviest.bestWeightGrams) ?? 0} kg × ${heaviest.bestReps ?? 0}`
+                  : heaviest.measure === 'duration'
+                    ? `${Math.round(heaviest.totalSeconds / 60)} min`
+                    : heaviest.measure === 'distance'
+                      ? `${(heaviest.totalMetres / 1000).toFixed(2)} km`
+                      : `${heaviest.totalReps} reps`,
+            }
+          : null
 
       setData({
         title: routines.find((r) => r.id === workout.routineId)?.name ?? 'Workout',
         dateLabel: formatIsoDateLong(date),
         duration: formatDuration(totals.durationMinutes),
-        setCount: totals.setCount,
-        totalReps: totals.totalReps,
-        volumeGrams: totals.volumeGrams,
-        personalRecord: record,
+        records: beaten,
+        highlight,
+        // Seeded by the date so the line is stable if you come back to this
+        // screen tomorrow, and follows the tone set in Motivation settings.
+        motivation: getWorkoutShareLine(
+          { recordCount: beaten.length },
+          Number(date.replaceAll('-', '')),
+          prefs.motivationTone,
+        ),
       })
     } catch {
       setError('Could not load this workout.')
@@ -294,6 +339,31 @@ export function ShareWorkoutPage() {
       </p>
     </div>
   )
+}
+
+/**
+ * The share choices, kept on the device.
+ *
+ * Wrapped because storage throws rather than returning null in a few situations
+ * — private windows, a full quota, an embedded WebView with storage disabled —
+ * and a remembered preference is never worth a crashed screen.
+ */
+const CHOICE_PREFIX = 'bm-share:'
+
+function readChoice(key: string, fallback: string): string {
+  try {
+    return localStorage.getItem(CHOICE_PREFIX + key) ?? fallback
+  } catch {
+    return fallback
+  }
+}
+
+function writeChoice(key: string, value: string): void {
+  try {
+    localStorage.setItem(CHOICE_PREFIX + key, value)
+  } catch {
+    // Not being able to remember is not a failure worth showing anyone.
+  }
 }
 
 function Chip({
