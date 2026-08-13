@@ -13,7 +13,8 @@ export function StatusSelector({
   disabled = false,
 }: {
   value: HabitStatus | null
-  onChange: (status: HabitStatus) => void
+  /** Null means No Status. Tapping the active option clears it. */
+  onChange: (status: HabitStatus | null) => void
   disabled?: boolean
 }) {
   return (
@@ -24,7 +25,7 @@ export function StatusSelector({
           type="button"
           disabled={disabled}
           className={`bm-status-opt bm-status-${opt.value} ${value === opt.value ? 'active' : ''}`}
-          onClick={() => onChange(opt.value)}
+          onClick={() => onChange(value === opt.value ? null : opt.value)}
           aria-pressed={value === opt.value}
         >
           <span className="bm-status-icon" aria-hidden="true">
