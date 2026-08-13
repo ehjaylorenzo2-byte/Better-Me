@@ -93,11 +93,12 @@ const FIXTURES = {
   ],
   budgets: [{ id: 'b1', user_id: USER, month: '2026-08', amount_centavos: 1500000 }],
   savings_categories: [
-    { id: 's1', user_id: USER, name: 'Emergency Fund', goal_amount_centavos: 5000000, balance_centavos: 1850000, color: 'teal', icon: 'shield', account_id: ACC.bpi, created_at: '' },
-    { id: 's2', user_id: USER, name: 'New Laptop', goal_amount_centavos: 6500000, balance_centavos: 900000, color: 'indigo', icon: 'laptop', account_id: null, created_at: '' },
+    { id: 's1', user_id: USER, name: 'Emergency Fund', goal_amount_centavos: 5000000, balance_centavos: 5000000, color: 'teal', icon: 'shield', account_id: ACC.bpi, archived: false, created_at: '' },
+    { id: 's2', user_id: USER, name: 'New Laptop', goal_amount_centavos: 6500000, balance_centavos: 900000, color: 'indigo', icon: 'laptop', account_id: null, archived: false, created_at: '' },
+    { id: 's3', user_id: USER, name: 'Old Phone Fund', goal_amount_centavos: 2000000, balance_centavos: 350000, color: 'amber', icon: 'phone', account_id: ACC.bpi, archived: true, created_at: '' },
   ],
   savings_transactions: [
-    { id: 'st1', user_id: USER, category_id: 's1', type: 'deposit', amount_centavos: 500000, note: null, counter_account_id: ACC.gcash, created_at: '2026-08-10T08:00:00Z' },
+    { id: 'st1', user_id: USER, category_id: 's1', type: 'deposit', amount_centavos: 500000, note: null, counter_account_id: ACC.gcash, entry_date: day(0), created_at: '2026-08-10T08:00:00Z' },
   ],
   debts: [
     { id: 'd1', user_id: USER, name: 'Phone Installment', original_amount_centavos: 2400000, balance_centavos: 1200000, paid_off: false, color: 'rose', icon: 'phone', created_at: '' },
@@ -110,7 +111,7 @@ const FIXTURES = {
     { id: ACC.bpi, user_id: USER, balance_centavos: 3700000 },
     { id: ACC.cash, user_id: USER, balance_centavos: -18500 },
   ],
-  user_preferences: [{ user_id: USER, theme: 'system' }],
+  user_preferences: [{ user_id: USER, theme: 'system', default_budget_centavos: null }],
   notification_preferences: [{ user_id: USER }],
   habits: [],
   habit_schedules: [],
@@ -200,6 +201,8 @@ async function main() {
       ['savings-new', '/savings/new'],
       ['calendar', '/calendar'],
       ['savings', '/savings'],
+      ['savings-goal', '/savings/s1'],
+      ['savings-goal-edit', '/savings/s2/edit'],
       ['profile', '/profile'],
       ['profile-motivation', '/profile/motivation'],
       ['profile-home-screen', '/profile/home-screen'],
