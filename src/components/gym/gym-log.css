@@ -367,6 +367,22 @@
   border-bottom: none;
 }
 
+/* Two doors out of a finished workout. Side by side on any phone, stacked only
+   if the labels are ever translated into something much longer. */
+.bm-gym-done-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.bm-gym-done-actions .bm-btn {
+  flex: 1 1 130px;
+  /* The banner sets a success colour on its own text; these are buttons and
+     take the ordinary reading colour instead. */
+  color: var(--text-primary);
+  font-weight: 400;
+}
+
 /* ---- Sharing ---- */
 .bm-share-stage {
   border-radius: var(--radius-md);
