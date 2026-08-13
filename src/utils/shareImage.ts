@@ -45,6 +45,13 @@ export const SHARE_THEMES: Record<'light' | 'dark', ShareTheme> = {
   },
 }
 
+/** One line of the card: what the lift was, and what you did on it. */
+export interface ShareLift {
+  name: string
+  /** Already formatted for display, e.g. "80 kg × 10", "22 reps", "1.20 km". */
+  detail: string
+}
+
 export interface ShareData {
   /** Routine name, or a plain fallback when the workout was not from a routine. */
   title: string
@@ -52,11 +59,18 @@ export interface ShareData {
   dateLabel: string
   /** Already formatted, e.g. "1h 18m". */
   duration: string
-  setCount: number
-  totalReps: number
-  volumeGrams: number
-  /** One line at most, e.g. "Bench Press 80 kg". Empty when nothing was beaten. */
-  personalRecord?: string | null
+  /**
+   * Personal records set in this session. Usually empty, which is the point:
+   * a record is only worth showing because most days do not have one.
+   */
+  records: ShareLift[]
+  /**
+   * The session's best single set, shown only when there was no record. Never
+   * labelled as a record, because it is not one.
+   */
+  highlight?: ShareLift | null
+  /** One earned sentence. See getWorkoutShareLine in utils/motivation.ts. */
+  motivation: string
 }
 
 export interface ShareOptions {
@@ -116,6 +130,30 @@ function measureTracked(ctx: CanvasRenderingContext2D, text: string, spacing: nu
   return Math.max(0, width - spacing)
 }
 
+/** Greedy word wrap. The motivation line is a sentence, so it has to break. */
+function wrapText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  font: string,
+  maxWidth: number,
+): string[] {
+  ctx.font = font
+  const words = text.split(/\s+/).filter(Boolean)
+  const lines: string[] = []
+  let line = ''
+  for (const word of words) {
+    const candidate = line ? `${line} ${word}` : word
+    if (line && ctx.measureText(candidate).width > maxWidth) {
+      lines.push(line)
+      line = word
+    } else {
+      line = candidate
+    }
+  }
+  if (line) lines.push(line)
+  return lines
+}
+
 /** Shrinks a font until the text fits, so a long routine name never runs off. */
 function fitFont(
   ctx: CanvasRenderingContext2D,
@@ -132,10 +170,6 @@ function fitFont(
     ctx.font = `${size}px ${family}`
   }
   return size
-}
-
-function formatKg(grams: number): string {
-  return Math.round(grams / 1000).toLocaleString('en-PH')
 }
 
 /** Cover-fit, the same rule CSS background-size: cover uses. */
@@ -180,9 +214,16 @@ export function drawShareImage(canvas: HTMLCanvasElement, data: ShareData, optio
 }
 
 /**
- * Square card, "numbers only": the four figures at the size they deserve and no
- * exercise list. Lime appears exactly twice — the rule under the title and the
- * record pill — so the card reads as Better Me without shouting.
+ * The square card.
+ *
+ * The workout is the headline, the record is the point, and the line at the
+ * bottom is the reason anyone posts it. There are deliberately no session
+ * totals: sets, reps and kilograms lifted are a training log, not a thing to
+ * show people, and a big "8,420 kg" says almost nothing about whether the
+ * session was any good. What a record says is unambiguous — you had never done
+ * that before.
+ *
+ * Lime appears exactly twice: the rule under the title, and the record marker.
  */
 function drawSquare(
   ctx: CanvasRenderingContext2D,
@@ -205,63 +246,81 @@ function drawSquare(
   ctx.fillStyle = t.dim
   ctx.font = `500 ${26 * k}px ${FAMILY_MEDIUM}`
   drawTracked(ctx, 'BETTER ME', pad + dot + 16 * k, y + 29 * k, 4 * k)
-  y += 96 * k
+  y += 104 * k
 
-  // Title
-  const titleSize = fitFont(ctx, data.title, FAMILY_BLACK, 92 * k, contentWidth, 52 * k)
+  // The workout is the headline. "Pull Day" is what the picture is about.
+  const titleSize = fitFont(ctx, data.title, FAMILY_BLACK, 116 * k, contentWidth, 60 * k)
   ctx.fillStyle = t.ink
   ctx.font = `900 ${titleSize}px ${FAMILY_BLACK}`
   ctx.fillText(data.title, pad, y + titleSize * 0.82)
-  y += titleSize + 20 * k
+  y += titleSize + 24 * k
 
   // The single lime rule.
   ctx.fillStyle = t.lime
   ctx.fillRect(pad, y, 150 * k, 14 * k)
-  y += 14 * k + 30 * k
+  y += 14 * k + 34 * k
 
+  // Date and duration share one quiet line. Duration is a fact about the
+  // session rather than a score, so it is stated, not celebrated.
   ctx.fillStyle = t.dim
   ctx.font = `400 ${30 * k}px ${FAMILY_BOOK}`
-  ctx.fillText(data.dateLabel, pad, y + 24 * k)
-  y += 24 * k + 44 * k
+  ctx.fillText(`${data.dateLabel}  ·  ${data.duration}`, pad, y + 24 * k)
 
-  // The headline figure.
-  const durSize = fitFont(ctx, data.duration, FAMILY_BLACK, 186 * k, contentWidth, 96 * k)
-  ctx.fillStyle = t.ink
-  ctx.font = `900 ${durSize}px ${FAMILY_BLACK}`
-  ctx.fillText(data.duration, pad, y + durSize * 0.78)
+  y += 24 * k + 62 * k
 
-  // The stats and the record are anchored to the bottom rather than stacked
-  // after the title, so a one-word routine name and a long one produce the same
-  // card instead of leaving a hole above the footer.
-  const pillHeight = 62 * k
-  const footerTop = size - pad - 30 * k
-  const pillTop = data.personalRecord ? footerTop - 34 * k - pillHeight : footerTop
-  const labelBaseline = pillTop - 54 * k
-  const valueBaseline = labelBaseline - 36 * k
-  const ruleY = valueBaseline - 46 * k
+  // The record follows straight on from the workout, because it is the same
+  // thought: this is what the session was. An earlier version pinned it just
+  // above the motivation line and left a hole through the middle of the card.
+  const entries = data.records.length > 0 ? data.records : data.highlight ? [data.highlight] : []
+  const isRecord = data.records.length > 0
+  const label = isRecord
+    ? data.records.length > 1
+      ? 'NEW PERSONAL RECORDS'
+      : 'NEW PERSONAL RECORD'
+    : "TODAY'S BEST SET"
 
-  ctx.fillStyle = t.rule
-  ctx.fillRect(pad, ruleY, contentWidth, 2 * k)
+  if (entries.length > 0) {
+    const shown = entries.slice(0, 3)
+    const blockHeight = 52 * k + shown.length * 74 * k
 
-  const stats: Array<[string, string]> = [
-    [String(data.setCount), 'SETS'],
-    [String(data.totalReps), 'REPS'],
-    [formatKg(data.volumeGrams), 'KG LIFTED'],
-  ]
-  const column = contentWidth / stats.length
-  stats.forEach(([value, label], index) => {
-    const x = pad + column * index
-    ctx.fillStyle = t.ink
-    ctx.font = `900 ${54 * k}px ${FAMILY_BLACK}`
-    ctx.fillText(value, x, valueBaseline)
-    ctx.fillStyle = t.dim
-    ctx.font = `500 ${22 * k}px ${FAMILY_MEDIUM}`
-    drawTracked(ctx, label, x, labelBaseline, 2 * k)
-  })
+    // A lime bar down the left edge marks a record. Nothing marks a best set,
+    // because a best set is not an achievement and should not borrow the look
+    // of one.
+    if (isRecord) {
+      ctx.fillStyle = t.lime
+      ctx.fillRect(pad, y, 10 * k, blockHeight)
+    }
 
-  if (data.personalRecord) {
-    drawPill(ctx, `New PR · ${data.personalRecord}`, pad, pillTop, k, t)
+    const textLeft = isRecord ? pad + 34 * k : pad
+    ctx.fillStyle = isRecord ? t.ink : t.dim
+    ctx.font = `500 ${26 * k}px ${FAMILY_MEDIUM}`
+    drawTracked(ctx, label, textLeft, y + 26 * k, 3 * k)
+    y += 52 * k
+
+    for (const entry of shown) {
+      ctx.fillStyle = t.ink
+      const nameSize = fitFont(ctx, entry.name, FAMILY_BLACK, 54 * k, contentWidth - 70 * k, 34 * k)
+      ctx.font = `900 ${nameSize}px ${FAMILY_BLACK}`
+      ctx.fillText(entry.name, textLeft, y + 46 * k)
+      const nameWidth = ctx.measureText(entry.name).width
+
+      ctx.fillStyle = t.dim
+      ctx.font = `400 ${38 * k}px ${FAMILY_BOOK}`
+      ctx.fillText(`  ${entry.detail}`, textLeft + nameWidth, y + 46 * k)
+      y += 74 * k
+    }
   }
+
+  // The line people actually read, anchored to the bottom so it closes the card
+  // however much sits above it.
+  const motivationLines = wrapText(ctx, data.motivation, `500 ${36 * k}px ${FAMILY_MEDIUM}`, contentWidth)
+  const motivationTop = size - pad - 34 * k - motivationLines.length * 48 * k
+
+  ctx.fillStyle = t.ink
+  ctx.font = `500 ${36 * k}px ${FAMILY_MEDIUM}`
+  motivationLines.forEach((line, index) => {
+    ctx.fillText(line, pad, motivationTop + 36 * k + index * 48 * k)
+  })
 
   ctx.fillStyle = t.dim
   ctx.font = `400 ${24 * k}px ${FAMILY_BOOK}`
@@ -271,9 +330,10 @@ function drawSquare(
 /**
  * Compact overlay, bottom left, for dropping over your own photo.
  *
- * The dark fade is drawn only across the lower part of the frame, so the photo
- * stays visible, and it is baked into the transparent PNG as real alpha rather
- * than being faked with a flat rectangle.
+ * Same priorities as the square, with less room: the workout, the record, and
+ * nothing that needs a second read. The dark fade is drawn only across the
+ * lower part of the frame so the photo stays visible, and it is baked into the
+ * transparent PNG as real alpha rather than faked with a flat rectangle.
  */
 function drawOverlay(
   ctx: CanvasRenderingContext2D,
@@ -297,32 +357,28 @@ function drawOverlay(
   ctx.fillStyle = 'rgba(244, 245, 240, 0.5)'
   ctx.font = `500 ${22 * k}px ${FAMILY_MEDIUM}`
   drawTracked(ctx, 'BETTER ME', pad, y, 4 * k)
-  y -= 46 * k
+  y -= 50 * k
 
-  const stats = [
-    { value: String(data.setCount), label: ' sets' },
-    { value: String(data.totalReps), label: ' reps' },
-    { value: formatKg(data.volumeGrams), label: ' kg' },
-  ]
-  let x = pad
-  for (const stat of stats) {
+  // One record line, or one best set. Never a row of totals.
+  const entry = data.records[0] ?? data.highlight ?? null
+  if (entry) {
     ctx.fillStyle = 'rgba(244, 245, 240, 0.9)'
-    ctx.font = `900 ${30 * k}px ${FAMILY_BLACK}`
-    ctx.fillText(stat.value, x, y)
-    x += ctx.measureText(stat.value).width
-    ctx.font = `400 ${30 * k}px ${FAMILY_BOOK}`
-    ctx.fillText(stat.label, x, y)
-    x += ctx.measureText(stat.label).width + 44 * k
+    ctx.font = `900 ${32 * k}px ${FAMILY_BLACK}`
+    ctx.fillText(entry.name, pad, y)
+    const nameWidth = ctx.measureText(entry.name).width
+    ctx.font = `400 ${32 * k}px ${FAMILY_BOOK}`
+    ctx.fillText(`  ${entry.detail}`, pad + nameWidth, y)
+    y -= 42 * k
+
+    if (data.records.length > 0) {
+      ctx.fillStyle = t.lime
+      ctx.font = `500 ${22 * k}px ${FAMILY_MEDIUM}`
+      drawTracked(ctx, 'NEW PERSONAL RECORD', pad, y, 3 * k)
+      y -= 44 * k
+    }
   }
-  y -= 40 * k
 
-  const durSize = fitFont(ctx, data.duration, FAMILY_BLACK, 118 * k, size - pad * 2, 72 * k)
-  ctx.fillStyle = t.ink
-  ctx.font = `900 ${durSize}px ${FAMILY_BLACK}`
-  ctx.fillText(data.duration, pad, y)
-  y -= durSize * 0.86
-
-  const titleSize = fitFont(ctx, data.title, FAMILY_BLACK, 60 * k, size - pad * 2, 38 * k)
+  const titleSize = fitFont(ctx, data.title, FAMILY_BLACK, 96 * k, size - pad * 2, 56 * k)
   ctx.fillStyle = t.ink
   ctx.font = `900 ${titleSize}px ${FAMILY_BLACK}`
   ctx.fillText(data.title, pad, y)
@@ -333,34 +389,6 @@ function drawOverlay(
   // The one thread of lime, above the title rather than through it.
   ctx.fillStyle = t.lime
   ctx.fillRect(pad, y - 18 * k, 110 * k, 10 * k)
-}
-
-function drawPill(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  x: number,
-  y: number,
-  k: number,
-  t: ShareTheme,
-): void {
-  ctx.font = `900 ${28 * k}px ${FAMILY_BLACK}`
-  const textWidth = ctx.measureText(text).width
-  const height = 62 * k
-  const width = textWidth + 52 * k
-  const radius = height / 2
-
-  ctx.fillStyle = t.lime
-  ctx.beginPath()
-  ctx.moveTo(x + radius, y)
-  ctx.lineTo(x + width - radius, y)
-  ctx.arc(x + width - radius, y + radius, radius, -Math.PI / 2, Math.PI / 2)
-  ctx.lineTo(x + radius, y + height)
-  ctx.arc(x + radius, y + radius, radius, Math.PI / 2, -Math.PI / 2)
-  ctx.closePath()
-  ctx.fill()
-
-  ctx.fillStyle = t.onLime
-  ctx.fillText(text, x + 26 * k, y + height / 2 + 10 * k)
 }
 
 /** A filename someone can find again in their downloads folder. */
