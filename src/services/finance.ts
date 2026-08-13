@@ -143,6 +143,56 @@ export async function getBudgetForMonth(userId: string, month: string): Promise<
   return { id: data.id, userId: data.user_id, month: data.month, amount: data.amount_centavos }
 }
 
+/**
+ * What a month is allowed to spend, and where the figure came from.
+ *
+ * A month with its own budget row uses it. Every other month falls back to the
+ * default, if one is set. The source is returned rather than hidden, because
+ * "₱20,000 left" reads differently when it is this month's own number versus
+ * your usual monthly figure, and the screen should be able to say which.
+ *
+ * Setting December's budget writes a December row and touches nothing else, so
+ * November's history stays exactly as it was.
+ */
+export interface EffectiveBudget {
+  amount: Centavos
+  source: 'month' | 'default'
+}
+
+export async function getEffectiveBudget(
+  userId: string,
+  month: string,
+): Promise<EffectiveBudget | null> {
+  const [forMonth, { data: prefs }] = await Promise.all([
+    getBudgetForMonth(userId, month),
+    supabase
+      .from('user_preferences')
+      .select('default_budget_centavos')
+      .eq('user_id', userId)
+      .maybeSingle(),
+  ])
+
+  if (forMonth) return { amount: forMonth.amount, source: 'month' }
+
+  const fallback = (prefs as { default_budget_centavos: number | null } | null)?.default_budget_centavos
+  if (fallback === null || fallback === undefined) return null
+  return { amount: fallback, source: 'default' }
+}
+
+export async function setDefaultBudget(userId: string, amount: Centavos | null): Promise<void> {
+  if (amount !== null && amount < 0) throw new Error('Budget cannot be negative.')
+  const { error } = await supabase
+    .from('user_preferences')
+    .upsert({ user_id: userId, default_budget_centavos: amount }, { onConflict: 'user_id' })
+  if (error) throw error
+}
+
+/** Removes a month's own budget so it falls back to the default again. */
+export async function clearBudgetForMonth(userId: string, month: string): Promise<void> {
+  const { error } = await supabase.from('budgets').delete().eq('user_id', userId).eq('month', month)
+  if (error) throw error
+}
+
 export async function setBudgetForMonth(userId: string, month: string, amount: Centavos): Promise<Budget> {
   if (amount < 0) throw new Error('Budget cannot be negative.')
   const { data, error } = await supabase

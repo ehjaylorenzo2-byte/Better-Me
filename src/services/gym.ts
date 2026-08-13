@@ -74,9 +74,14 @@ export async function getOrCreateWorkoutForDate(userId: string, date: IsoDate): 
     return mapWorkout(rest, (workout_exercises as Parameters<typeof mapExercise>[0][]).map(mapExercise))
   }
 
+  // Which gym habit this workout belongs to is decided once, here, and stored.
+  // The old code searched for "any gym habit" at completion time and could pick
+  // a different one each time, marking the wrong habit Done.
+  const { data: habitId } = await supabase.rpc('resolve_gym_habit', { p_date: date })
+
   const { data: created, error: createError } = await supabase
     .from('workouts')
-    .insert({ user_id: userId, workout_date: date })
+    .insert({ user_id: userId, workout_date: date, habit_id: habitId ?? null })
     .select('*')
     .single()
   if (createError) throw createError

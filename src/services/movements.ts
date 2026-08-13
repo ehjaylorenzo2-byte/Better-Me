@@ -50,8 +50,9 @@ export async function listRecentMovements(
       .limit(limit),
     supabase
       .from('savings_transactions')
-      .select('id, category_id, type, amount_centavos, note, counter_account_id, created_at')
+      .select('id, category_id, type, amount_centavos, note, counter_account_id, entry_date, created_at')
       .eq('user_id', userId)
+      .order('entry_date', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(limit),
     supabase
@@ -132,8 +133,11 @@ export async function listRecentMovements(
           .join(' ') || null,
       amount: row.amount_centavos,
       direction: 'moved',
-      // Savings transactions have no date of their own, only a timestamp.
-      entryDate: row.created_at.slice(0, 10),
+      // A real date now, chosen the same way as every other entry, instead of
+      // slicing a UTC timestamp and landing in the wrong month before 08:00.
+      // The column is NOT NULL, so the fallback is only for a row written
+      // before 0007 landed; without it one missing value crashes the screen.
+      entryDate: row.entry_date ?? row.created_at.slice(0, 10),
       createdAt: row.created_at,
       color: goal?.color ?? 'teal',
       icon: goal?.icon ?? 'piggy-bank',

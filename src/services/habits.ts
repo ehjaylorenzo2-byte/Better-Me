@@ -9,7 +9,7 @@ function mapHabit(row: {
   name: string
   description: string | null
   icon: string | null
-  category: 'general' | 'gym'
+  category: string
   archived: boolean
   created_at: string
 }): Habit {
@@ -104,7 +104,7 @@ export interface CreateHabitInput {
   name: string
   description?: string | null
   icon?: string | null
-  category?: 'general' | 'gym'
+  category?: string
   recurrence: Recurrence
   weekdays?: number[] | null
   time?: IsoTime | null
