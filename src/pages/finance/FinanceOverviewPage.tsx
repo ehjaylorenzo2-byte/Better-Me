@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/Card'
 import { SectionRow } from '@/components/ui/SectionRow'
 import { LoadingState, ErrorState } from '@/components/ui/States'
 import { CategoryIcon } from '@/components/CategoryIcon'
-import { getBudgetForMonth, listExpensesForMonth, listIncomeForMonth } from '@/services/finance'
+import { getEffectiveBudget, listExpensesForMonth, listIncomeForMonth } from '@/services/finance'
 import { ensureDefaultCategories, listCategories, buildCategoryLookup, type FinanceCategory } from '@/services/categories'
 import { ensureDefaultAccounts, listAccountsWithBalances } from '@/services/accounts'
 import { listRecentMovements } from '@/services/movements'
@@ -16,6 +16,7 @@ import { getCurrentPhilippineMonth, philippineMonthLabel, relativeDayLabel } fro
 import { formatCurrency, addCentavos } from '@/utils/money'
 import {
   calculateBudgetRemaining,
+  calculateBudgetSpend,
   calculateMoneyOut,
   calculateTotalDebt,
   calculateTotalSavings,
@@ -67,8 +68,12 @@ export function FinanceOverviewPage() {
         listIncomeForMonth(userId, month),
         listExpensesForMonth(userId, month),
         listPaymentsForMonth(userId, month),
-        listAccountsWithBalances(userId),
-        getBudgetForMonth(userId, month),
+        // includeArchived, deliberately. An archived bank is hidden from the
+        // wallet list but its money is still yours, and leaving it out made
+        // Total Balance drop by the archived balance while that bank's entries
+        // still counted in Money in and Money out.
+        listAccountsWithBalances(userId, { includeArchived: true }),
+        getEffectiveBudget(userId, month),
         listSavingsCategories(userId),
         listDebts(userId),
         listCategories(userId, { includeArchived: true }),
@@ -97,16 +102,21 @@ export function FinanceOverviewPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, month, outlet?.savedAt])
 
+  // Every wallet counts towards the total, archived or not.
   const totalBalance = useMemo(() => sumAccountBalances(accounts), [accounts])
+  // The Wallets list itself still shows only the live ones.
+  const liveAccounts = useMemo(() => accounts.filter((a) => !a.archived), [accounts])
   const moneyIn = useMemo(() => addCentavos(...income.map((i) => i.amount)), [income])
   const moneyOut = useMemo(() => calculateMoneyOut(expenses, debtPayments), [expenses, debtPayments])
+  // Same rule as Budget and Home.
+  const budgetSpend = useMemo(() => calculateBudgetSpend(expenses, debtPayments), [expenses, debtPayments])
   const totalSavings = useMemo(() => calculateTotalSavings(goals.map((g) => g.balance)), [goals])
   const totalDebt = useMemo(
     () => calculateTotalDebt(debts.filter((d) => !d.paidOff).map((d) => d.balance)),
     [debts],
   )
 
-  const budgetSummary = budgetAmount !== null ? calculateBudgetRemaining(budgetAmount, moneyOut) : null
+  const budgetSummary = budgetAmount !== null ? calculateBudgetRemaining(budgetAmount, budgetSpend) : null
   const lookup = useMemo(() => buildCategoryLookup(categories), [categories])
 
   // Debt payments are spending, so they belong in the breakdown under the name
@@ -132,7 +142,8 @@ export function FinanceOverviewPage() {
         <p className="bm-finance-eyebrow">Total balance</p>
         <h1 className="bm-display num">{formatCurrency(totalBalance)}</h1>
         <p className="bm-finance-sub">
-          {philippineMonthLabel(month)} · across {accounts.length} {accounts.length === 1 ? 'wallet' : 'wallets'}
+          {philippineMonthLabel(month)} · across {liveAccounts.length}{' '}
+          {liveAccounts.length === 1 ? 'wallet' : 'wallets'}
         </p>
       </header>
 
@@ -213,11 +224,11 @@ export function FinanceOverviewPage() {
           </Link>
         </div>
 
-        {accounts.length === 0 ? (
+        {liveAccounts.length === 0 ? (
           <p className="bm-empty-line">No banks yet. Add one under Manage.</p>
         ) : (
           <div className="bm-wallets">
-            {accounts.map((account) => (
+            {liveAccounts.map((account) => (
               <div key={account.id} className="bm-wallet" style={chipVars(account.color)}>
                 <span className="bm-chip bm-chip-sm">
                   <CategoryIcon name={account.icon} size={17} />
@@ -231,7 +242,7 @@ export function FinanceOverviewPage() {
           </div>
         )}
 
-        {accounts.some((a) => a.balance < 0) ? (
+        {liveAccounts.some((a) => a.balance < 0) ? (
           <p className="bm-wallet-warning">
             A wallet is below zero. That usually means spending was logged without money going in
             first, so check for a missing income or transfer.

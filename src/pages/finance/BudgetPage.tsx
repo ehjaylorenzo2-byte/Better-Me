@@ -8,7 +8,14 @@ import { LoadingState, ErrorState } from '@/components/ui/States'
 import { useToast } from '@/components/ui/Toast'
 import { CategoryIcon } from '@/components/CategoryIcon'
 import { getCategoryColor } from '@/theme/categoryStyles'
-import { getBudgetForMonth, listExpensesForMonth, setBudgetForMonth } from '@/services/finance'
+import {
+  getEffectiveBudget,
+  listExpensesForMonth,
+  setBudgetForMonth,
+  setDefaultBudget,
+  type EffectiveBudget,
+} from '@/services/finance'
+import { listPaymentsForMonth } from '@/services/debt'
 import {
   ensureDefaultCategories,
   listCategories,
@@ -18,7 +25,7 @@ import {
 } from '@/services/categories'
 import { getCurrentPhilippineMonth } from '@/utils/timezone'
 import { formatCurrency, isValidMoneyInput, pesoToCentavos, centavosToPeso } from '@/utils/money'
-import { calculateBudgetRemaining } from '@/utils/calculations'
+import { calculateBudgetRemaining, calculateBudgetSpend } from '@/utils/calculations'
 import './finance.css'
 import './categories.css'
 
@@ -30,6 +37,9 @@ export function BudgetPage() {
   const [overall, setOverall] = useState('')
   const [spentByCategory, setSpentByCategory] = useState<Map<string, number>>(new Map())
   const [totalSpent, setTotalSpent] = useState(0)
+  // Whether the figure shown is this month's own budget or the usual default.
+  const [budgetSource, setBudgetSource] = useState<EffectiveBudget['source'] | null>(null)
+  const [makeDefault, setMakeDefault] = useState(false)
   const [categories, setCategories] = useState<FinanceCategory[]>([])
   const [limits, setLimits] = useState<Map<string, string>>(new Map())
   const [loading, setLoading] = useState(true)
@@ -42,23 +52,26 @@ export function BudgetPage() {
     setError(null)
     try {
       await ensureDefaultCategories()
-      const [budget, expenses, cats, catBudgets] = await Promise.all([
-        getBudgetForMonth(userId, month),
+      const [budget, expenses, payments, cats, catBudgets] = await Promise.all([
+        getEffectiveBudget(userId, month),
         listExpensesForMonth(userId, month),
+        listPaymentsForMonth(userId, month),
         listCategories(userId),
         listCategoryBudgets(userId, month),
       ])
 
       if (budget) setOverall(String(centavosToPeso(budget.amount)))
+      setBudgetSource(budget?.source ?? null)
 
+      // Per-category spend stays expenses only, because debt payments do not
+      // belong to a spending category. The overall total counts them, matching
+      // Finance and Home.
       const spend = new Map<string, number>()
-      let total = 0
       for (const e of expenses) {
         spend.set(e.category, (spend.get(e.category) ?? 0) + e.amount)
-        total += e.amount
       }
       setSpentByCategory(spend)
-      setTotalSpent(total)
+      setTotalSpent(calculateBudgetSpend(expenses, payments))
 
       setCategories(cats.filter((c) => c.kind === 'expense'))
       setLimits(new Map(catBudgets.map((b) => [b.categoryId, String(centavosToPeso(b.amount))])))
@@ -85,6 +98,10 @@ export function BudgetPage() {
     try {
       if (overall && isValidMoneyInput(overall)) {
         await setBudgetForMonth(userId, month, pesoToCentavos(overall))
+        // Saving it as the usual figure too means next month starts with a
+        // budget instead of blank. This month keeps its own row either way, so
+        // changing December later still cannot touch November.
+        if (makeDefault) await setDefaultBudget(userId, pesoToCentavos(overall))
       }
       await Promise.all(
         categories.map((c) => {
@@ -110,7 +127,10 @@ export function BudgetPage() {
       <PageHeader title="Budget" />
 
       <Card elevated>
-        <p className="bm-summary-label">Monthly budget for {month}</p>
+        <p className="bm-summary-label">
+          Monthly budget for {month}
+          {budgetSource === 'default' ? ' · using your usual amount' : null}
+        </p>
         <p className="bm-balance-value" style={{ fontSize: 28 }}>
           {overall ? formatCurrency(overallCentavos) : 'Not set'}
         </p>
@@ -133,10 +153,26 @@ export function BudgetPage() {
                 ? `Over budget by ${formatCurrency(summary.overBy)}`
                 : `${formatCurrency(summary.remaining)} left to spend`}
             </p>
+            <p className="bm-cat-footnote" style={{ textAlign: 'left', padding: 0, marginTop: 4 }}>
+              Counts expenses and debt payments. Money you moved into savings is not spending, so it
+              is not counted here.
+            </p>
           </>
         ) : null}
         <div style={{ marginTop: 14 }}>
           <CurrencyInput label="Overall monthly limit" value={overall} onChange={setOverall} />
+          <label className="bm-check-row">
+            <input
+              type="checkbox"
+              checked={makeDefault}
+              onChange={(e) => setMakeDefault(e.target.checked)}
+            />
+            <span>Use this as my usual monthly budget from now on</span>
+          </label>
+          <p className="bm-cat-footnote" style={{ textAlign: 'left', padding: 0 }}>
+            Months you have not set on their own follow your usual amount. Changing one month never
+            changes a month that has already passed.
+          </p>
         </div>
       </Card>
 
