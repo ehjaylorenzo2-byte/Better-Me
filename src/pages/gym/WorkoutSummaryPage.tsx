@@ -141,7 +141,15 @@ export function WorkoutSummaryPage() {
         </p>
       ) : null}
 
-      <button className="bm-btn bm-btn-secondary bm-btn-full" onClick={() => navigate(`/gym/${date}`)}>
+      <button className="bm-btn bm-btn-primary bm-btn-full" onClick={() => navigate(`/gym/${date}/share`)}>
+        Share this workout
+      </button>
+
+      <button
+        className="bm-btn bm-btn-secondary bm-btn-full"
+        style={{ marginTop: 10 }}
+        onClick={() => navigate(`/gym/${date}`)}
+      >
         Back to the workout
       </button>
     </div>
