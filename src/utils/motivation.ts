@@ -113,3 +113,66 @@ export function getFinanceMotivationMessage(isOverBudget: boolean, overByRatio: 
   }
   return "You're already over budget this month. Slow down."
 }
+
+/**
+ * The line at the bottom of a shared workout image.
+ *
+ * Deliberately its own phrase set rather than reusing the daily habit lines.
+ * Those exist to needle you in private about a day you let slide; this one goes
+ * on a picture other people see, so it never insults the person holding it. The
+ * tone setting still moves it, but only between quiet and loud, never into a
+ * roast.
+ *
+ * The line is earned rather than decorative: it is chosen from what actually
+ * happened in the session, so a day with no record does not get a line
+ * pretending otherwise.
+ */
+const SHARE_RECORD_LINES = [
+  'A number you have never hit before.',
+  'New ground. That is what progress looks like.',
+  'That is a personal best. Nobody gave you that one.',
+  'Heavier than you have ever gone. Remember that.',
+]
+
+const SHARE_MULTI_RECORD_LINES = [
+  'More than one personal best in a single session.',
+  'Several bests in one day. Rare, and earned.',
+  'You did not beat one record today. You beat a few.',
+]
+
+const SHARE_SOLID_LINES = [
+  'No record today. Showed up anyway, which is the part most people skip.',
+  'Not every session breaks a record. They all still count.',
+  'Quiet work. This is the kind that adds up.',
+  'The unremarkable sessions are what make the remarkable ones possible.',
+]
+
+const SHARE_LOUD_SUFFIX: Record<MotivationTone, string> = {
+  encourage: '',
+  balanced: '',
+  roast: ' Now do it again.',
+  brutal: ' Do not get comfortable.',
+}
+
+export interface WorkoutShareContext {
+  /** How many personal records were set in this session. */
+  recordCount: number
+}
+
+export function getWorkoutShareLine(
+  context: WorkoutShareContext,
+  daySeed = 0,
+  tone: MotivationTone = 'balanced',
+): string {
+  const base =
+    context.recordCount > 1
+      ? pick(SHARE_MULTI_RECORD_LINES, daySeed)
+      : context.recordCount === 1
+        ? pick(SHARE_RECORD_LINES, daySeed)
+        : pick(SHARE_SOLID_LINES, daySeed)
+
+  // The push only lands when there was something to push on. Telling someone to
+  // "do it again" after a session with no record reads as a dig, which is
+  // exactly what this phrase set is meant to avoid.
+  return context.recordCount > 0 ? base + SHARE_LOUD_SUFFIX[tone] : base
+}
