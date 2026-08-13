@@ -44,6 +44,8 @@ export interface Database {
           /** 0 = Sunday, 1 = Monday. */
           week_starts_on: 0 | 1
           hidden_home_cards: string[]
+          /** Applies to any month with no row in budgets. Null = no default. */
+          default_budget_centavos: number | null
           updated_at: string
         }
         Insert: {
@@ -54,6 +56,7 @@ export interface Database {
           text_size?: 'small' | 'medium' | 'large'
           week_starts_on?: 0 | 1
           hidden_home_cards?: string[]
+          default_budget_centavos?: number | null
         }
         Update: Partial<{
           theme: 'light' | 'dark' | 'system'
@@ -62,6 +65,7 @@ export interface Database {
           text_size: 'small' | 'medium' | 'large'
           week_starts_on: 0 | 1
           hidden_home_cards: string[]
+          default_budget_centavos: number | null
         }>
         Relationships: never[]
       }
@@ -118,7 +122,7 @@ export interface Database {
           name: string
           description: string | null
           icon: string | null
-          category: 'general' | 'gym'
+          category: string
           archived: boolean
           created_at: string
         }
@@ -128,10 +132,16 @@ export interface Database {
           name: string
           description?: string | null
           icon?: string | null
-          category?: 'general' | 'gym'
+          category?: string
           archived?: boolean
         }
-        Update: Partial<{ name: string; description: string | null; icon: string | null; archived: boolean }>
+        Update: Partial<{
+          name: string
+          description: string | null
+          icon: string | null
+          category: string
+          archived: boolean
+        }>
         Relationships: never[]
       }
       habit_schedules: {
@@ -200,6 +210,8 @@ export interface Database {
           id: string
           user_id: string
           occurrence_id: string | null
+          /** The gym habit this workout belongs to. Decided at creation, 0009. */
+          habit_id: string | null
           workout_date: string
           duration_minutes: number | null
           notes: string | null
@@ -210,6 +222,7 @@ export interface Database {
           id?: string
           user_id: string
           occurrence_id?: string | null
+          habit_id?: string | null
           workout_date: string
           duration_minutes?: number | null
           notes?: string | null
@@ -310,6 +323,8 @@ export interface Database {
       }
       savings_categories: {
         Row: {
+          /** Out of the active list, still holding its balance. Added in 0008. */
+          archived: boolean
           id: string
           user_id: string
           name: string
@@ -341,6 +356,8 @@ export interface Database {
       }
       savings_transactions: {
         Row: {
+          /** Manila date the movement belongs to. Added in 0007. */
+          entry_date: string
           id: string
           category_id: string
           user_id: string
@@ -565,6 +582,8 @@ export interface Database {
           p_amount_centavos: number
           p_note?: string | null
           p_counter_account_id?: string | null
+          /** Null lets the database stamp today in Manila. */
+          p_entry_date?: string | null
         }
         Returns: Database['public']['Tables']['savings_categories']['Row']
       }
@@ -577,6 +596,23 @@ export interface Database {
           p_status: 'done' | 'skipped' | 'cancelled' | null
         }
         Returns: Database['public']['Tables']['habit_occurrences']['Row']
+      }
+      /** Which gym habit a date belongs to. Deterministic, unlike the old search. */
+      resolve_gym_habit: { Args: { p_date: string }; Returns: string | null }
+      schedule_applies_on: { Args: { p_schedule_id: string; p_date: string }; Returns: boolean }
+      /** Deletes a goal, refusing outright if money would be lost. */
+      delete_savings_goal: {
+        Args: {
+          p_goal_id: string
+          p_disposition?: 'empty' | 'move' | 'withdraw'
+          p_target_goal_id?: string | null
+          p_target_account_id?: string | null
+        }
+        Returns: { action: 'deleted' | 'moved' | 'withdrawn'; amount: number }
+      }
+      set_savings_goal_archived: {
+        Args: { p_goal_id: string; p_archived: boolean }
+        Returns: Database['public']['Tables']['savings_categories']['Row']
       }
       complete_workout: {
         Args: { p_workout_id: string }

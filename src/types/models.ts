@@ -32,7 +32,8 @@ export interface Habit {
   name: string
   description: string | null
   icon: string | null
-  category: 'general' | 'gym'
+  /** Free text label. Only 'gym' has behaviour: it links to the workout tracker. */
+  category: string
   archived: boolean
   createdAt: string
 }
@@ -191,6 +192,8 @@ export interface SavingsCategory {
   icon: string
   /** The bank this goal is held in. Null only for goals created before wallets. */
   accountId: string | null
+  /** Out of the active list, but still yours and still holding its balance. */
+  archived: boolean
   createdAt: string
 }
 
@@ -203,6 +206,8 @@ export interface SavingsTransaction {
   note: string | null
   /** The bank on the far side: funded a deposit, or received a withdrawal. */
   counterAccountId: string | null
+  /** The Manila date this belongs to, like every other entry in Finance. */
+  entryDate: IsoDate
   createdAt: string
 }
 
