@@ -159,8 +159,34 @@ export function WorkoutDetailsPage() {
         <div className="bm-gym-banner">This day has passed. Viewing in read-only mode.</div>
       ) : null}
 
+      {/*
+        The way back to the summary and the share image.
+
+        Completing a workout used to be the only route to those two screens, so
+        leaving the app — or just tapping Home — put them out of reach until you
+        completed something else. They are pages you want days later, so a
+        finished workout is now a permanent door to both.
+      */}
       {workout.completed ? (
-        <Card className="bm-gym-completed-banner">Workout completed ✓</Card>
+        <Card className="bm-gym-completed-banner">
+          <p style={{ marginBottom: 10 }}>Workout completed ✓</p>
+          <div className="bm-gym-done-actions">
+            <button
+              type="button"
+              className="bm-btn bm-btn-secondary"
+              onClick={() => navigate(`/gym/${date}/summary`)}
+            >
+              View summary
+            </button>
+            <button
+              type="button"
+              className="bm-btn bm-btn-secondary"
+              onClick={() => navigate(`/gym/${date}/share`)}
+            >
+              Share image
+            </button>
+          </div>
+        </Card>
       ) : null}
 
       <Card style={{ marginBottom: 14 }}>
