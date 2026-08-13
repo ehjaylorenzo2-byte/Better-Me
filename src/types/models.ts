@@ -70,6 +70,7 @@ export interface WorkoutExercise {
   sets: number
   reps: number
   weightKg: number
+  measure: ExerciseMeasure
   notes: string | null
   orderIndex: number
 }
@@ -78,11 +79,98 @@ export interface Workout {
   id: string
   userId: string
   occurrenceId: string | null
+  /** The gym habit this belongs to, decided when the workout is created. */
+  habitId: string | null
+  /** The routine it came from, if it was started from one. */
+  routineId: string | null
+  startedAt: string | null
+  endedAt: string | null
   workoutDate: IsoDate
   durationMinutes: number | null
   notes: string | null
   completed: boolean
   exercises: WorkoutExercise[]
+}
+
+/** How an exercise is measured. Weight x reps is meaningless for a plank. */
+export type ExerciseMeasure = 'weight_reps' | 'reps' | 'duration' | 'distance'
+
+export interface Program {
+  id: string
+  userId: string
+  name: string
+  notes: string | null
+  archived: boolean
+  sortOrder: number
+}
+
+export interface Routine {
+  id: string
+  userId: string
+  programId: string | null
+  name: string
+  /** Sticks to the routine and reappears every time it is trained. */
+  routineNote: string | null
+  archived: boolean
+  sortOrder: number
+}
+
+export interface RoutineExercise {
+  id: string
+  userId: string
+  routineId: string
+  name: string
+  measure: ExerciseMeasure
+  /** A hint for the day, not a limit. */
+  targetSets: number | null
+  notes: string | null
+  sortOrder: number
+}
+
+export interface WorkoutSet {
+  id: string
+  workoutExerciseId: string
+  setNumber: number
+  /** Grams, integer, for the same reason money is centavos. */
+  weightGrams: number | null
+  reps: number | null
+  durationSeconds: number | null
+  distanceMetres: number | null
+  completed: boolean
+}
+
+export interface PreviousSet {
+  workoutDate: IsoDate
+  setNumber: number
+  weightGrams: number | null
+  reps: number | null
+  durationSeconds: number | null
+  distanceMetres: number | null
+}
+
+export interface ExerciseTotals {
+  workoutExerciseId: string
+  name: string
+  measure: ExerciseMeasure
+  setCount: number
+  totalReps: number
+  /** Zero for anything not measured in weight x reps, by design. */
+  volumeGrams: number
+  totalSeconds: number
+  totalMetres: number
+  bestWeightGrams: number | null
+  bestReps: number | null
+}
+
+export interface WorkoutTotals {
+  workoutId: string
+  exerciseCount: number
+  setCount: number
+  totalReps: number
+  volumeGrams: number
+  totalSeconds: number
+  totalMetres: number
+  durationMinutes: number | null
 }
 
 export interface IncomeEntry {

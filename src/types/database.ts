@@ -46,6 +46,8 @@ export interface Database {
           hidden_home_cards: string[]
           /** Applies to any month with no row in budgets. Null = no default. */
           default_budget_centavos: number | null
+          rest_seconds: number
+          rest_timer_enabled: boolean
           updated_at: string
         }
         Insert: {
@@ -57,6 +59,8 @@ export interface Database {
           week_starts_on?: 0 | 1
           hidden_home_cards?: string[]
           default_budget_centavos?: number | null
+          rest_seconds?: number
+          rest_timer_enabled?: boolean
         }
         Update: Partial<{
           theme: 'light' | 'dark' | 'system'
@@ -66,6 +70,8 @@ export interface Database {
           week_starts_on: 0 | 1
           hidden_home_cards: string[]
           default_budget_centavos: number | null
+          rest_seconds: number
+          rest_timer_enabled: boolean
         }>
         Relationships: never[]
       }
@@ -228,7 +234,57 @@ export interface Database {
           notes?: string | null
           completed?: boolean
         }
-        Update: Partial<{ duration_minutes: number | null; notes: string | null; completed: boolean }>
+        Update: Partial<{
+          duration_minutes: number | null
+          notes: string | null
+          completed: boolean
+          habit_id: string | null
+          routine_id: string | null
+          started_at: string | null
+          ended_at: string | null
+        }>
+        Relationships: never[]
+      }
+      programs: {
+        Row: { id: string; user_id: string; name: string; notes: string | null; archived: boolean; sort_order: number; created_at: string }
+        Insert: { user_id: string; name: string; notes?: string | null; archived?: boolean; sort_order?: number }
+        Update: Partial<{ name: string; notes: string | null; archived: boolean; sort_order: number }>
+        Relationships: never[]
+      }
+      routines: {
+        Row: { id: string; user_id: string; program_id: string | null; name: string; routine_note: string | null; archived: boolean; sort_order: number; created_at: string }
+        Insert: { user_id: string; program_id?: string | null; name: string; routine_note?: string | null; archived?: boolean; sort_order?: number }
+        Update: Partial<{ name: string; routine_note: string | null; archived: boolean; sort_order: number }>
+        Relationships: never[]
+      }
+      routine_exercises: {
+        Row: { id: string; user_id: string; routine_id: string; name: string; measure: 'weight_reps' | 'reps' | 'duration' | 'distance'; target_sets: number | null; notes: string | null; sort_order: number }
+        Insert: { id?: string; user_id: string; routine_id: string; name: string; measure?: 'weight_reps' | 'reps' | 'duration' | 'distance'; target_sets?: number | null; notes?: string | null; sort_order?: number }
+        Update: Partial<{ name: string; measure: 'weight_reps' | 'reps' | 'duration' | 'distance'; target_sets: number | null; notes: string | null; sort_order: number }>
+        Relationships: never[]
+      }
+      workout_sets: {
+        Row: { id: string; user_id: string; workout_exercise_id: string; set_number: number; weight_grams: number | null; reps: number | null; duration_seconds: number | null; distance_metres: number | null; completed: boolean; created_at: string }
+        Insert: { user_id: string; workout_exercise_id: string; set_number: number; weight_grams?: number | null; reps?: number | null; duration_seconds?: number | null; distance_metres?: number | null; completed?: boolean }
+        Update: Partial<{ weight_grams: number | null; reps: number | null; duration_seconds: number | null; distance_metres: number | null; completed: boolean }>
+        Relationships: never[]
+      }
+      workout_exercise_totals: {
+        Row: { workout_exercise_id: string; workout_id: string; user_id: string; name: string; measure: 'weight_reps' | 'reps' | 'duration' | 'distance'; set_count: number; total_reps: number; volume_grams: number; total_seconds: number; total_metres: number; best_weight_grams: number | null; best_reps: number | null }
+        Insert: never
+        Update: never
+        Relationships: never[]
+      }
+      workout_totals: {
+        Row: { workout_id: string; user_id: string; workout_date: string; completed: boolean; exercise_count: number; set_count: number; total_reps: number; volume_grams: number; total_seconds: number; total_metres: number; duration_minutes: number | null }
+        Insert: never
+        Update: never
+        Relationships: never[]
+      }
+      exercise_records: {
+        Row: { user_id: string; key: string; name: string; best_weight_grams: number | null; best_reps: number | null; best_volume_grams: number; last_done: string | null }
+        Insert: never
+        Update: never
         Relationships: never[]
       }
       workout_exercises: {
@@ -253,6 +309,8 @@ export interface Database {
           weight_kg?: number
           notes?: string | null
           order_index?: number
+          measure?: 'weight_reps' | 'reps' | 'duration' | 'distance'
+          routine_exercise_id?: string | null
         }
         Update: Partial<{ name: string; sets: number; reps: number; weight_kg: number; notes: string | null }>
         Relationships: never[]
@@ -598,6 +656,10 @@ export interface Database {
         Returns: Database['public']['Tables']['habit_occurrences']['Row']
       }
       /** Which gym habit a date belongs to. Deterministic, unlike the old search. */
+      previous_exercise_sets: {
+        Args: { p_name: string; p_before: string }
+        Returns: Array<{ workout_date: string; set_number: number; weight_grams: number | null; reps: number | null; duration_seconds: number | null; distance_metres: number | null }>
+      }
       resolve_gym_habit: { Args: { p_date: string }; Returns: string | null }
       schedule_applies_on: { Args: { p_schedule_id: string; p_date: string }; Returns: boolean }
       /** Deletes a goal, refusing outright if money would be lost. */
