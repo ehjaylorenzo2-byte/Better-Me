@@ -29,7 +29,9 @@ export function SavingsOverviewPage() {
     setError(null)
     try {
       const [cats, accs] = await Promise.all([
-        listSavingsCategories(userId),
+        // Archived goals still hold money, so the total must include them even
+        // though they are listed separately below.
+        listSavingsCategories(userId, { includeArchived: true }),
         listAccountsWithBalances(userId, { includeArchived: true }),
       ])
       setCategories(cats)
@@ -50,6 +52,8 @@ export function SavingsOverviewPage() {
   if (error) return <ErrorState message={error} onRetry={load} />
 
   const total = calculateTotalSavings(categories.map((c) => c.balance))
+  const active = categories.filter((c) => !c.archived)
+  const archived = categories.filter((c) => c.archived)
 
   return (
     <div>
@@ -76,17 +80,17 @@ export function SavingsOverviewPage() {
       </Link>
 
       <h2 className="bm-section-heading">My savings goals</h2>
-      {categories.some((c) => !c.accountId) ? (
+      {active.some((c) => !c.accountId) ? (
         <p className="bm-section-note" style={{ marginBottom: 12 }}>
           Some goals were created before banks existed and are not linked to one yet. Open a goal
           and set its bank so the money shows up in the right wallet.
         </p>
       ) : null}
-      {categories.length === 0 ? (
+      {active.length === 0 ? (
         <EmptyState message="Start your first savings goal." />
       ) : (
         <ul className="bm-savings-list">
-          {categories.map((cat) => {
+          {active.map((cat) => {
             const progress = calculateSavingsProgress(cat.balance, cat.goalAmount)
             const bank = cat.accountId ? lookup.get(cat.accountId) : null
             // The bank can hold more than the goal, and that is not an error.
@@ -129,6 +133,33 @@ export function SavingsOverviewPage() {
           })}
         </ul>
       )}
+
+      {archived.length > 0 ? (
+        <>
+          <h2 className="bm-section-heading" style={{ marginTop: 28 }}>
+            Archived goals
+          </h2>
+          <p className="bm-section-note" style={{ marginBottom: 12 }}>
+            Out of the way, not gone. These still hold their money and it is still counted in your
+            total above. Open one and use Manage to restore it.
+          </p>
+          <ul className="bm-savings-list">
+            {archived.map((cat) => (
+              <li key={cat.id}>
+                <Link to={`/savings/${cat.id}`}>
+                  <Card className="bm-savings-item is-archived">
+                    <div className="bm-entry-row">
+                      <span style={{ fontFamily: 'var(--font-medium)' }}>{cat.name}</span>
+                      <span className="bm-entry-amount">{formatCurrency(cat.balance)}</span>
+                    </div>
+                    <p className="bm-entry-meta">Archived</p>
+                  </Card>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
     </div>
   )
 }

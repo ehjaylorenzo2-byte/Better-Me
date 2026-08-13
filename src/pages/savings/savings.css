@@ -63,3 +63,137 @@
   color: var(--warning);
   font-family: var(--font-medium);
 }
+
+/* ---------------------------------------------------------------------------
+   Goal management: archive, restore, and a delete that cannot lose money.
+   --------------------------------------------------------------------------- */
+.bm-savings-item.is-archived {
+  opacity: 0.62;
+}
+
+.bm-goal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.bm-goal-action {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  text-align: left;
+  padding: var(--space-4);
+  min-height: 44px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+}
+
+.bm-goal-action.is-danger {
+  border-color: rgba(192, 57, 47, 0.3);
+}
+
+.bm-goal-action-label {
+  font-family: var(--font-medium);
+  font-size: 15px;
+}
+
+.bm-goal-action.is-danger .bm-goal-action-label {
+  color: var(--danger);
+}
+
+.bm-goal-action-hint {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.bm-goal-choices {
+  display: flex;
+  gap: var(--space-2);
+  margin: var(--space-4) 0;
+}
+
+.bm-goal-choice {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  min-height: 44px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: var(--font-medium);
+}
+
+.bm-goal-choice.active {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+  color: var(--accent-text);
+}
+
+.bm-goal-choice:disabled {
+  opacity: 0.45;
+}
+
+.bm-goal-choice-note {
+  font-size: 11px;
+  font-family: var(--font-regular);
+  color: var(--text-tertiary);
+}
+
+.bm-goal-select {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-4);
+}
+
+.bm-goal-select select {
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 15px;
+}
+
+/* Reaching the target is a moment, not a prompt to delete anything. */
+.bm-goal-reached {
+  border-radius: var(--radius-md);
+  background: var(--accent-tint);
+  border: 1px solid var(--accent);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.bm-goal-reached-title {
+  font-family: var(--font-bold);
+  font-size: 17px;
+  color: var(--accent-text);
+  margin-bottom: var(--space-1);
+}
+
+.bm-goal-reached-body {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.bm-goal-warn {
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--accent-tint);
+  border: 1px solid var(--accent);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
