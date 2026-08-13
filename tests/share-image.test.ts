@@ -19,13 +19,12 @@ import {
  */
 
 const DATA: ShareData = {
-  title: 'Push Day',
+  title: 'Pull Day',
   dateLabel: 'Monday, 10 August',
   duration: '1h 18m',
-  setCount: 16,
-  totalReps: 142,
-  volumeGrams: 8_420_000,
-  personalRecord: 'Bench Press 80 kg',
+  records: [{ name: 'Barbell Row', detail: '80 kg × 10' }],
+  highlight: null,
+  motivation: 'A number you have never hit before.',
 }
 
 describe('share filenames', () => {
@@ -63,34 +62,71 @@ describe('drawing', () => {
     expect(painted.some((call) => call.startsWith('fillRect:0,0,1080,1080'))).toBe(false)
   })
 
-  it('puts every figure it was given on the card', () => {
+  it('leads with the workout, the record and the line', () => {
     const painted: string[] = []
     const ctx = stubContext(painted)
     const canvas = { width: 1080, height: 1080, getContext: () => ctx } as unknown as HTMLCanvasElement
 
     drawShareImage(canvas, DATA, { layout: 'square', theme: 'light', transparent: false })
-    const text = painted.filter((c) => c.startsWith('text:')).join(' ')
+    const text = spaced(painted)
 
-    expect(text).toContain('Push Day')
-    expect(text).toContain('1h 18m')
-    expect(text).toContain('16')
-    expect(text).toContain('142')
-    // 8,420,000 grams is 8,420 kilograms, not 8,420,000 of anything.
-    expect(text).toContain('8,420')
-    expect(text).toContain('Bench Press 80 kg')
+    expect(text).toContain('Pull Day')
+    expect(text).toContain('Barbell Row')
+    expect(text).toContain('80 kg × 10')
+    expect(text).toContain('never hit before')
   })
 
-  it('leaves the record off entirely when nothing was beaten', () => {
+  /**
+   * The card used to carry sets, reps and total kilograms lifted. They are gone
+   * on purpose: a session total is a training log, and "8,420 kg" says nothing
+   * about whether the session was any good. Pinned so they cannot creep back.
+   */
+  it('shows no session totals at all', () => {
+    const painted: string[] = []
+    const ctx = stubContext(painted)
+    const canvas = { width: 1080, height: 1080, getContext: () => ctx } as unknown as HTMLCanvasElement
+
+    drawShareImage(canvas, DATA, { layout: 'square', theme: 'dark', transparent: false })
+    const text = tight(painted)
+
+    expect(text).not.toContain('SETS')
+    expect(text).not.toContain('REPS')
+    expect(text).not.toContain('KG LIFTED')
+    expect(text).not.toContain('8,420')
+  })
+
+  it('never calls a best set a record', () => {
     const painted: string[] = []
     const ctx = stubContext(painted)
     const canvas = { width: 1080, height: 1080, getContext: () => ctx } as unknown as HTMLCanvasElement
 
     drawShareImage(
       canvas,
-      { ...DATA, personalRecord: null },
+      {
+        ...DATA,
+        records: [],
+        highlight: { name: 'Barbell Row', detail: '70 kg × 8' },
+        motivation: 'Not every session breaks a record. They all still count.',
+      },
       { layout: 'square', theme: 'dark', transparent: false },
     )
-    expect(painted.filter((c) => c.startsWith('text:')).join(' ')).not.toContain('New PR')
+    const text = tight(painted)
+
+    expect(text).toContain("TODAY'S BEST SET")
+    expect(text).not.toContain('NEW PERSONAL RECORD')
+  })
+
+  it('carries the workout and the record onto the photo overlay too', () => {
+    const painted: string[] = []
+    const ctx = stubContext(painted)
+    const canvas = { width: 1080, height: 1080, getContext: () => ctx } as unknown as HTMLCanvasElement
+
+    drawShareImage(canvas, DATA, { layout: 'overlay', theme: 'dark', transparent: true })
+
+    expect(spaced(painted)).toContain('Pull Day')
+    expect(spaced(painted)).toContain('Barbell Row')
+    expect(tight(painted)).toContain('NEW PERSONAL RECORD')
+    expect(tight(painted)).not.toContain('SETS')
   })
 })
 
@@ -116,6 +152,26 @@ describe('privacy', () => {
     expect(source).not.toMatch(/https?:\/\/(?!\/)/)
   })
 })
+
+/**
+ * Two readings of the same painted output.
+ *
+ * Tracked labels are drawn one character at a time, so "NEW PERSONAL RECORD"
+ * arrives as nineteen separate fillText calls. Joining those with a space gives
+ * "N E W ...", which no sensible assertion matches — so a test written that way
+ * passes by being unable to fail. `tight` concatenates instead, which restores
+ * the label exactly; `spaced` is for whole strings drawn in one call.
+ */
+function spaced(painted: string[]): string {
+  return painted.filter((c) => c.startsWith('text:')).join(' ')
+}
+
+function tight(painted: string[]): string {
+  return painted
+    .filter((c) => c.startsWith('text:'))
+    .map((c) => c.slice('text:'.length))
+    .join('')
+}
 
 /** The smallest 2d context that records what was asked of it. */
 function stubContext(log: string[]) {
