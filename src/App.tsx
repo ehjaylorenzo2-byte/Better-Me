@@ -32,6 +32,7 @@ import { EditSectionPage } from '@/pages/finance/EditSectionPage'
 import { SavingsOverviewPage } from '@/pages/savings/SavingsOverviewPage'
 import { AddSavingsCategoryPage } from '@/pages/savings/AddSavingsCategoryPage'
 import { SavingsCategoryPage } from '@/pages/savings/SavingsCategoryPage'
+import { EditSavingsGoalPage } from '@/pages/savings/EditSavingsGoalPage'
 import { AddSavingsTransactionPage } from '@/pages/savings/AddSavingsTransactionPage'
 
 import { DebtOverviewPage } from '@/pages/debt/DebtOverviewPage'
@@ -119,6 +120,7 @@ function App() {
         <Route path="/savings" element={<SavingsOverviewPage />} />
         <Route path="/savings/new" element={<AddSavingsCategoryPage />} />
         <Route path="/savings/:categoryId" element={<SavingsCategoryPage />} />
+        <Route path="/savings/:categoryId/edit" element={<EditSavingsGoalPage />} />
         <Route path="/savings/:categoryId/transaction" element={<AddSavingsTransactionPage />} />
 
         <Route path="/debt" element={<DebtOverviewPage />} />
