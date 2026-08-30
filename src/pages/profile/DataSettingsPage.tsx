@@ -69,7 +69,7 @@ export function DataSettingsPage() {
       <Card style={{ marginBottom: 16 }}>
         <h2 className="bm-section-title">Clear a month</h2>
         <p className="bm-settings-note">
-          Removes that month's income, expenses, transfers, savings movements, debt payments, habit
+          Removes that month's income, expenses, transfers, savings movements, debt payments, To Do
           results and workouts. Your balances are corrected at the same time, so a debt you paid down
           that month goes back up by what you paid, and a savings goal goes back down.
         </p>
@@ -109,7 +109,7 @@ export function DataSettingsPage() {
       <Card style={{ marginBottom: 16 }}>
         <h2 className="bm-section-title">Start over</h2>
         <p className="bm-settings-note">
-          Clears every habit, workout, entry, wallet, savings goal and debt you have ever added. Your
+          Clears every To Do, workout, entry, wallet, savings goal and debt you have ever added. Your
           login, your name, your photo, your theme and your notification switches stay. This cannot be
           undone.
         </p>
