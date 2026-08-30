@@ -102,9 +102,20 @@ export async function updateDebt(
   if (error) throw error
 }
 
-/** Deletes the debt and, by cascade, its payment history. Irreversible. */
+/**
+ * Deletes the debt without refunding you.
+ *
+ * A plain delete cascades the payments away, and because the wallet-balance
+ * view subtracts debt payments, the money would silently reappear in the
+ * wallet and the month's spending would drop. The money actually left, so the
+ * RPC converts each payment into an ordinary expense — same amount, date and
+ * wallet, filed under the debt's name — before removing the debt.
+ *
+ * It is one RPC rather than an insert followed by a delete because a failure
+ * between the two would either double-count the spending or refund it.
+ */
 export async function deleteDebt(debtId: string): Promise<void> {
-  const { error } = await supabase.from('debts').delete().eq('id', debtId)
+  const { error } = await supabase.rpc('delete_debt_keep_spending', { p_debt_id: debtId })
   if (error) throw error
 }
 
