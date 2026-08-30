@@ -3,56 +3,47 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/AuthContext'
 import { Avatar } from '@/components/Avatar'
 import { CategoryIcon } from '@/components/CategoryIcon'
-import { ProgressRing } from '@/components/ui/Progress'
 import { StatusBadge } from '@/components/ui/StatusSelector'
-import { LoadingState, ErrorState, EmptyState } from '@/components/ui/States'
+import { LoadingState, ErrorState } from '@/components/ui/States'
 import { getOccurrencesInRange } from '@/services/habits'
-import { getEffectiveBudget, listExpensesForMonth } from '@/services/finance'
+import { listExpensesForMonth } from '@/services/finance'
 import { listPaymentsForMonth } from '@/services/debt'
+import { getWorkoutForDate } from '@/services/gym'
+import { listRoutines } from '@/services/programs'
 import { getAvatarUrl } from '@/services/avatar'
 import { getUserPreferences } from '@/services/preferences'
 import { chipVarsForLabel } from '@/theme/categoryStyles'
 import {
-  addDaysToIsoDate,
+  formatIsoDateLong,
   formatIsoTime12h,
   getCurrentPhilippineMonth,
   getPhilippineToday,
-  isoDateWeekday,
 } from '@/utils/timezone'
-import { calculateDailyProgress, calculateBudgetRemaining, calculateBudgetSpend } from '@/utils/calculations'
-import { formatCurrency } from '@/utils/money'
+import { addCentavos, formatCurrency } from '@/utils/money'
+import { calculateDailyProgress } from '@/utils/calculations'
 import { getMotivationMessage } from '@/utils/motivation'
 import type { HabitOccurrence, Habit, HabitSchedule, MotivationTone } from '@/types/models'
 import './home.css'
 
 type Row = HabitOccurrence & { habit: Habit; schedule: HabitSchedule }
 
-function startOfWeek(date: string): string {
-  return addDaysToIsoDate(date, -isoDateWeekday(date))
-}
-
-/** Counts a number up on mount. Small touch that makes the hero feel alive. */
-function useCountUp(target: number, duration = 700): number {
-  const [value, setValue] = useState(0)
-  useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setValue(target)
-      return
-    }
-    let frame = 0
-    const start = performance.now()
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / duration)
-      // easeOutCubic
-      setValue(Math.round(target * (1 - Math.pow(1 - t, 3))))
-      if (t < 1) frame = requestAnimationFrame(tick)
-    }
-    frame = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(frame)
-  }, [target, duration])
-  return value
-}
-
+/**
+ * Home is a daily snapshot, not a dashboard.
+ *
+ * It answers one question — what matters today — and then gets out of the way.
+ * The previous version opened with a large progress ring and a row of
+ * percentages, which is a report about yourself rather than a prompt to do
+ * something. Both are gone. The one figure worth keeping — how much of today
+ * is done — is a plain line above the schedule.
+ *
+ * There are no shortcut buttons here either. They live behind the plus in the
+ * header, which is reachable from every screen rather than only this one.
+ *
+ * The financial rule is deliberate and narrow: Home shows SPENT TODAY and
+ * nothing else about money. Savings, debt, wallet balances and net worth stay
+ * inside Money. That is a decision about who can read your phone over your
+ * shoulder, not a layout preference.
+ */
 export function HomePage() {
   const { userId, username, displayName } = useAuth()
   const navigate = useNavigate()
@@ -61,15 +52,16 @@ export function HomePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [todayRows, setTodayRows] = useState<Row[]>([])
-  const [weekRows, setWeekRows] = useState<Row[]>([])
-  const [budgetLine, setBudgetLine] = useState<string | null>(null)
-  const [overBudget, setOverBudget] = useState(false)
+  const [spentToday, setSpentToday] = useState(0)
+  const [spentCount, setSpentCount] = useState(0)
+  const [workoutName, setWorkoutName] = useState<string | null>(null)
+  const [workoutParts, setWorkoutParts] = useState<string[]>([])
+  const [workoutDone, setWorkoutDone] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-  // How blunt the daily line is allowed to be. Chosen under Profile.
   const [tone, setTone] = useState<MotivationTone>('balanced')
-  // Optional cards the person has switched off under Profile > Home screen.
-  // The greeting, today's progress and today's schedule are not in here on
-  // purpose: hiding those would leave Home with nothing to say.
+  // Optional cards switched off under Settings. The greeting, the schedule and
+  // the workout are not in here on purpose: hiding those would leave Home with
+  // nothing to say.
   const [hiddenCards, setHiddenCards] = useState<string[]>([])
   const shows = (card: string) => !hiddenCards.includes(card)
 
@@ -78,39 +70,44 @@ export function HomePage() {
     setLoading(true)
     setError(null)
     try {
-      const weekStart = startOfWeek(today)
-      const [todayData, weekData, budget, expenses, payments, avatar, prefs] = await Promise.all([
-        getOccurrencesInRange(userId, today, today),
-        getOccurrencesInRange(userId, weekStart, addDaysToIsoDate(weekStart, 6)),
-        getEffectiveBudget(userId, getCurrentPhilippineMonth()),
-        listExpensesForMonth(userId, getCurrentPhilippineMonth()),
-        listPaymentsForMonth(userId, getCurrentPhilippineMonth()),
-        getAvatarUrl(userId),
-        getUserPreferences(userId),
-      ])
+      const month = getCurrentPhilippineMonth()
+      const [todayData, expenses, payments, workout, routines, avatar, prefs] =
+        await Promise.all([
+          getOccurrencesInRange(userId, today, today),
+          listExpensesForMonth(userId, month),
+          listPaymentsForMonth(userId, month),
+          // Read-only on purpose. Opening Home must never create a workout row.
+          getWorkoutForDate(userId, today),
+          listRoutines(userId, { includeArchived: true }),
+          getAvatarUrl(userId),
+          getUserPreferences(userId),
+        ])
 
       setTodayRows(todayData)
-      setWeekRows(weekData)
       setAvatarUrl(avatar)
       setTone(prefs.motivationTone)
       setHiddenCards(prefs.hiddenHomeCards)
 
-      if (budget) {
-        // Same rule as the Finance and Budget screens: debt payments are spending.
-        const spent = calculateBudgetSpend(expenses, payments)
-        const summary = calculateBudgetRemaining(budget.amount, spent)
-        setOverBudget(summary.isOverBudget)
-        setBudgetLine(
-          summary.isOverBudget
-            ? `Over budget by ${formatCurrency(summary.overBy)}`
-            : `${formatCurrency(summary.remaining)} left to spend`,
-        )
+      // Spent today uses the same definition of spending as every other screen:
+      // expenses plus debt payments. Transfers are not spending and never count.
+      const todayExpenses = expenses.filter((e) => e.entryDate === today)
+      const todayPayments = payments.filter((p) => p.entryDate === today)
+      setSpentToday(
+        addCentavos(...todayExpenses.map((e) => e.amount), ...todayPayments.map((p) => p.amount)),
+      )
+      setSpentCount(todayExpenses.length + todayPayments.length)
+
+      if (workout) {
+        setWorkoutDone(workout.completed)
+        setWorkoutName(routines.find((r) => r.id === workout.routineId)?.name ?? 'Workout')
+        setWorkoutParts(workout.exercises.slice(0, 3).map((e) => e.name))
       } else {
-        setOverBudget(false)
-        setBudgetLine('Set a monthly budget')
+        setWorkoutDone(false)
+        setWorkoutName(null)
+        setWorkoutParts([])
       }
     } catch {
-      setError('Could not load your dashboard right now.')
+      setError('Could not load your day right now.')
     } finally {
       setLoading(false)
     }
@@ -122,14 +119,10 @@ export function HomePage() {
   }, [userId])
 
   const todayProgress = useMemo(() => calculateDailyProgress(todayRows.map((r) => r.status)), [todayRows])
-  const weekProgress = useMemo(() => calculateDailyProgress(weekRows.map((r) => r.status)), [weekRows])
   const motivation = useMemo(
     () => getMotivationMessage(todayProgress, today.split('-').reduce((a, n) => a + Number(n), 0), tone),
     [todayProgress, today, tone],
   )
-
-  const pct = Math.round(todayProgress.scheduledCompletionRate)
-  const animatedPct = useCountUp(pct)
 
   const greeting = (() => {
     const hour = Number(
@@ -140,180 +133,109 @@ export function HomePage() {
     return 'Good evening'
   })()
 
-  if (loading) return <LoadingState label="Loading your dashboard..." />
+  if (loading) return <LoadingState label="Loading your day..." />
   if (error) return <ErrorState message={error} onRetry={load} />
+
+  const preview = todayRows.slice(0, 4)
 
   return (
     <div className="bm-home">
-      {/* ---- Identity header: avatar left, greeting, name, motivation ---- */}
+      {/* ---- Compact welcome ---- */}
       <header className="bm-home-top bm-enter">
         <Link to="/profile" className="bm-home-identity bm-press" aria-label="Open your profile">
-          <Avatar url={avatarUrl} username={displayName ?? username} size={56} />
+          <Avatar url={avatarUrl} username={displayName ?? username} size={52} />
           <span className="bm-home-identity-text">
-            <span className="bm-home-greeting">{greeting} 👋</span>
+            <span className="bm-home-greeting">{greeting}</span>
             <span className="bm-home-name">{displayName ?? username ?? '...'}</span>
+            <span className="bm-home-date">{formatIsoDateLong(today)}</span>
           </span>
-        </Link>
-        <Link to="/profile/notifications" className="bm-home-bell bm-press" aria-label="Notification settings">
-          <BellIcon />
         </Link>
       </header>
 
       {shows('motivation') ? <p className="bm-home-motivation bm-enter">{motivation}</p> : null}
 
-      {/* ---- Hero: today's progress ---- */}
-      <section className="bm-hero bm-lift bm-enter">
-        <div className="bm-hero-glow" aria-hidden="true" />
-        <div className="bm-hero-inner">
-          <div className="bm-hero-left">
-            <p className="bm-hero-label">Today's progress</p>
-            <p className="bm-hero-value num">
-              {animatedPct}
-              <span className="bm-hero-pct">%</span>
-            </p>
-            <p className="bm-hero-sub">
-              {todayProgress.scheduled === 0
-                ? 'Nothing scheduled today'
-                : todayProgress.noStatus > 0
-                  ? `${todayProgress.noStatus} still to go`
-                  : 'Everything decided today'}
-            </p>
+      <div className="bm-home-grid">
+        {/* ---- Today's schedule. A preview, never the whole calendar. ---- */}
+        <section className="bm-card bm-home-schedule bm-enter">
+          <div className="bm-home-card-head">
+            <p className="bm-eyebrow">Today's schedule</p>
+            <Link to="/habits" className="bm-link">
+              Open
+            </Link>
           </div>
-          <ProgressRing
-            value={pct}
-            size={92}
-            strokeWidth={9}
-            showValue={false}
-            centre={
-              <span className="bm-ring-fraction num">
-                {todayProgress.done}
-                <span>/{todayProgress.scheduled}</span>
-              </span>
-            }
-          />
-        </div>
 
-        {shows('budget') ? (
-          <Link
-            to="/finance/budget"
-            className={`bm-hero-pill bm-press ${overBudget ? 'over' : ''}`}
-          >
-            <span className="bm-hero-pill-dot" />
-            {budgetLine}
-            <ChevronIcon />
-          </Link>
-        ) : null}
-      </section>
-
-      {/* ---- Quick actions ---- */}
-      {shows('quick') ? (
-        <section className="bm-quick bm-stagger">
-          <QuickAction label="Add Habit" icon="star" onClick={() => navigate('/habits/new')} />
-          <QuickAction label="Expense" icon="wallet" onClick={() => navigate('/finance/expense/new')} />
-          <QuickAction label="Transfer" icon="repeat" onClick={() => navigate('/finance/transfers/new')} />
-          <QuickAction label="Gym" icon="dumbbell" onClick={() => navigate('/gym')} />
-        </section>
-      ) : null}
-
-      {/* ---- Stat strip ---- */}
-      {shows('stats') ? (
-        <section className="bm-stats bm-stagger">
-          <StatTile label="Done" value={todayProgress.done} tone="success" />
-          <StatTile label="Skipped" value={todayProgress.skipped} tone="warning" />
-          <StatTile label="Left" value={todayProgress.noStatus} />
-          <StatTile label="This week" value={`${Math.round(weekProgress.scheduledCompletionRate)}%`} tone="accent" />
-        </section>
-      ) : null}
-
-      {/* ---- Today's schedule ---- */}
-      <section className="bm-section">
-        <div className="bm-section-head">
-          <h2>Today's schedule</h2>
-          <Link to="/habits" className="bm-link">
-            See all
-          </Link>
-        </div>
-
-        {todayRows.length === 0 ? (
-          <EmptyState
-            message="Nothing scheduled today. Add your first habit."
-            action={
-              <button className="bm-btn bm-btn-primary" onClick={() => navigate('/habits/new')}>
-                Add Habit
+          {todayRows.length === 0 ? (
+            <>
+              <p className="bm-home-quiet">Nothing scheduled today.</p>
+              <button className="bm-btn bm-btn-primary bm-btn-full" onClick={() => navigate('/habits/new')}>
+                Add a To Do
               </button>
-            }
-          />
-        ) : (
-          <ul className="bm-activity bm-stagger">
-            {todayRows.slice(0, 6).map((row) => {
-              return (
-                <li key={row.id}>
-                  <Link to={`/habits/${row.habitId}`} className="bm-activity-row bm-press">
-                    <span
-                      className="bm-chip bm-chip-anim"
-                      style={chipVarsForLabel(row.habit.name)}
-                    >
-                      <CategoryIcon name={row.habit.category === 'gym' ? 'dumbbell' : 'star'} size={19} />
-                    </span>
-                    <span className="bm-activity-text">
-                      <span className="bm-activity-name">{row.habit.name}</span>
-                      <span className="bm-activity-time">
-                        {row.scheduledTime ? formatIsoTime12h(row.scheduledTime) : 'Any time today'}
+            </>
+          ) : (
+            <>
+              <p className="bm-home-progress-line num">
+                {todayProgress.done} <span>of {todayProgress.scheduled} done</span>
+              </p>
+              <ul className="bm-home-list">
+                {preview.map((row) => (
+                  <li key={row.id}>
+                    <Link to={`/habits/${row.habitId}`} className="bm-card-row bm-home-row bm-press">
+                      <span className="bm-chip" style={chipVarsForLabel(row.habit.name)}>
+                        <CategoryIcon name={row.habit.category === 'gym' ? 'dumbbell' : 'star'} size={18} />
                       </span>
-                    </span>
-                    <StatusBadge status={row.status} />
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </section>
+                      <span className="bm-home-row-text">
+                        <span className="bm-home-row-name">{row.habit.name}</span>
+                        <span className="bm-home-row-time">
+                          {row.scheduledTime ? formatIsoTime12h(row.scheduledTime) : 'Any time today'}
+                        </span>
+                      </span>
+                      <StatusBadge status={row.status} />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              {todayRows.length > preview.length ? (
+                <p className="bm-home-more">and {todayRows.length - preview.length} more in Schedule</p>
+              ) : null}
+            </>
+          )}
+        </section>
+
+        {/* ---- Today's workout: what am I training, and start it ---- */}
+        <section className="bm-card bm-home-workout bm-enter">
+          <p className="bm-eyebrow">Today's workout</p>
+          <h2 className="bm-home-workout-name">{workoutName ?? 'Nothing planned'}</h2>
+          <p className="bm-home-workout-parts">
+            {workoutName
+              ? workoutParts.length > 0
+                ? workoutParts.join(' · ')
+                : 'No exercises yet'
+              : 'Start one and it is logged for today.'}
+          </p>
+          <button
+            className={`bm-btn bm-btn-full ${workoutDone ? 'bm-btn-secondary' : 'bm-btn-primary'}`}
+            onClick={() => navigate('/gym')}
+          >
+            {workoutDone ? 'View workout' : 'Start workout'}
+          </button>
+        </section>
+
+        {/* ---- Spent today. The ONLY money on this screen. ---- */}
+        {shows('budget') ? (
+          <section className="bm-card bm-home-spent bm-enter">
+            <p className="bm-eyebrow">Spent today</p>
+            <Link to="/finance/expenses" className="bm-home-spent-value num bm-press">
+              {formatCurrency(spentToday)}
+            </Link>
+            <p className="bm-home-quiet">
+              {spentCount === 0
+                ? 'Nothing recorded yet today.'
+                : `${spentCount} ${spentCount === 1 ? 'entry' : 'entries'} today.`}
+            </p>
+          </section>
+        ) : null}
+
+      </div>
     </div>
-  )
-}
-
-function QuickAction({ label, icon, onClick }: { label: string; icon: string; onClick: () => void }) {
-  return (
-    <button className="bm-quick-item bm-press" onClick={onClick}>
-      <span className="bm-quick-circle bm-chip-anim">
-        <CategoryIcon name={icon} size={22} />
-      </span>
-      <span className="bm-quick-label">{label}</span>
-    </button>
-  )
-}
-
-function StatTile({
-  label,
-  value,
-  tone,
-}: {
-  label: string
-  value: number | string
-  tone?: 'success' | 'warning' | 'accent'
-}) {
-  return (
-    <div className="bm-stat-tile bm-press">
-      <span className={`bm-stat-tile-value num ${tone ? `tone-${tone}` : ''}`}>{value}</span>
-      <span className="bm-stat-tile-label">{label}</span>
-    </div>
-  )
-}
-
-function BellIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-      <path d="M18 8a6 6 0 10-12 0c0 6-2 7-2 7h16s-2-1-2-7" />
-      <path d="M10.5 20a2 2 0 003 0" />
-    </svg>
-  )
-}
-
-function ChevronIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 6l6 6-6 6" />
-    </svg>
   )
 }
