@@ -1,13 +1,46 @@
+/*
+  Cards in the neumorphic set are defined by depth, not by an edge.
+
+  The border is gone deliberately: an outline plus a shadow reads as two
+  competing separations and flattens the effect. What remains is the pair of
+  shadows — light from the top left, shadow to the bottom right — on a surface
+  barely distinguishable from the ground behind it.
+
+  Padding is generous and, importantly, one value. The old file used 18px here
+  while eleven different card paddings existed across the app; every card now
+  takes the same step off the spacing scale.
+*/
+
 .bm-card {
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-lg);
-  padding: 18px;
-  box-shadow: var(--shadow-soft);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-raise);
 }
 
+/* Elevated is a stronger lift, not a different colour. */
 .bm-card-elevated {
   background: var(--surface-elevated);
-  border-color: var(--border-strong);
-  box-shadow: var(--shadow-elevated);
+  box-shadow: var(--shadow-raise);
+}
+
+/* Recessed — the inside of a well, a track, or a field group sitting within
+   another card. */
+.bm-card-sunken {
+  background: var(--surface);
+  border: 0;
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-press);
+}
+
+/* Rows nested inside a card lift only slightly, so the card stays the main
+   shape and its rows read as contents rather than as more cards. */
+.bm-card-row {
+  background: var(--surface);
+  border: 0;
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  box-shadow: var(--shadow-raise-sm);
 }
