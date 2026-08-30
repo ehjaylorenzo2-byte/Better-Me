@@ -132,18 +132,28 @@
 }
 
 /*
-  Beyond a phone the pill becomes a rail down the left, so a wide screen stops
-  being a phone column with empty space either side. The app shell adds the
-  matching left padding at the same width.
+  Beyond a phone the pill becomes a rail down the left of the surface.
+
+  It used to be fixed to the window and vertically centred, which on a wide
+  monitor left it floating out on its own, far from a page that starts at the
+  top. Now it is a real column in the shell grid.
+
+  Sticky rather than fixed: it scrolls up into place with the page and then
+  holds, so it stays part of the surface at any window height instead of
+  drifting over it.
 */
 @media (min-width: 1024px) {
   .bm-bottom-nav {
-    left: var(--space-6);
+    grid-column: 1;
+    grid-row: 1;
+    position: sticky;
+    top: calc(var(--safe-top) + var(--space-6));
+    left: auto;
     right: auto;
-    top: 50%;
     bottom: auto;
-    transform: translateY(-50%);
-    width: 208px;
+    transform: none;
+    width: auto;
+    margin: calc(var(--space-8) + var(--space-6)) 0 var(--space-6) var(--space-6);
     flex-direction: column;
     gap: var(--space-2);
     border-radius: var(--radius-lg);
@@ -161,9 +171,22 @@
     font-size: 14px;
   }
 
-  /* Nothing to clear once the nav is a rail. */
+  /*
+    Nothing to clear once the nav is a rail, and — like the shell buttons — it
+    measures from the centre so it sits on the surface's own corner rather than
+    the far corner of a 1920px monitor.
+  */
   .bm-fab {
     bottom: calc(var(--safe-bottom) + var(--space-6));
+    left: 50%;
+    right: auto;
+    transform: translateX(calc(var(--column) / 2 - 60px - var(--space-6)));
+  }
+
+  /* The press must keep the horizontal offset or the button jumps to the
+     middle of the screen on touch. */
+  .bm-fab:active {
+    transform: translateX(calc(var(--column) / 2 - 60px - var(--space-6))) scale(0.96);
   }
 }
 
