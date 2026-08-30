@@ -283,6 +283,32 @@ export function sumAccountBalances(balances: Array<{ balance: Centavos }>): Cent
 }
 
 /**
+ * Splits wallets into what you can spend and what is being held.
+ *
+ * A savings wallet holds money you have deliberately set aside. Counting it in
+ * the headline figure makes you look richer than you are and quietly invites
+ * you to spend what you were saving — the opposite of what the wallet is for.
+ *
+ * The held figure is returned rather than thrown away on purpose. Money that
+ * vanishes from a total with no explanation reads as a bug; the honest answer
+ * is "it is still yours, it is just not spendable", and that needs a number.
+ *
+ * Only 'savings' is held back. 'both' stays spendable, because a wallet you
+ * also spend from is by definition spendable.
+ */
+export function splitSpendable(
+  accounts: Array<{ balance: Centavos; flow: 'outgoing' | 'savings' | 'both' }>,
+): { spendable: Centavos; held: Centavos } {
+  let spendable = 0
+  let held = 0
+  for (const account of accounts) {
+    if (account.flow === 'savings') held += account.balance
+    else spendable += account.balance
+  }
+  return { spendable, held }
+}
+
+/**
  * Money out for the month: expenses plus debt payments.
  *
  * Debt payments are spending. They leave a bank and they are gone, so they
