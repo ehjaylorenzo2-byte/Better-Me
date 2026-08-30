@@ -88,7 +88,7 @@ export function AddEditHabitPage() {
 
   const validate = (): boolean => {
     const next: Record<string, string> = {}
-    if (!name.trim()) next.name = 'Habit name is required.'
+    if (!name.trim()) next.name = 'A name is required.'
     if ((recurrence === 'weekly' || recurrence === 'custom') && weekdays.length === 0) {
       next.weekdays = 'Choose at least one day.'
     }
@@ -123,7 +123,7 @@ export function AddEditHabitPage() {
             })
           }
         }
-        show('Habit updated.', 'success')
+        show('To Do updated.', 'success')
       } else {
         await createHabit({
           userId,
@@ -136,11 +136,11 @@ export function AddEditHabitPage() {
           startDate,
           reminderEnabled,
         })
-        show('Habit created.', 'success')
+        show('To Do created.', 'success')
       }
       navigate('/habits')
     } catch (err) {
-      show(err instanceof Error ? err.message : 'Could not save habit.', 'error')
+      show(err instanceof Error ? err.message : 'Could not save this To Do.', 'error')
     } finally {
       setSaving(false)
     }
@@ -150,9 +150,9 @@ export function AddEditHabitPage() {
 
   return (
     <div>
-      <PageHeader title={isEdit ? 'Edit Habit' : 'Add Habit'} />
+      <PageHeader title={isEdit ? 'Edit To Do' : 'Add To Do'} />
       <form className="bm-form" onSubmit={onSubmit}>
-        <Input label="Habit name" placeholder="e.g. Gym, Read, Drink Water" value={name} onChange={(e) => setName(e.target.value)} error={errors.name} />
+        <Input label="Name" placeholder="e.g. Gym, Read, Drink Water" value={name} onChange={(e) => setName(e.target.value)} error={errors.name} />
         <Input
           label="Description (optional)"
           placeholder="Add a note"
@@ -236,7 +236,7 @@ export function AddEditHabitPage() {
         </label>
 
         <Button type="submit" fullWidth loading={saving}>
-          {isEdit ? 'Save Changes' : 'Create Habit'}
+          {isEdit ? 'Save Changes' : 'Create To Do'}
         </Button>
       </form>
     </div>
