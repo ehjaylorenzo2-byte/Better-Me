@@ -356,3 +356,176 @@
   font-family: var(--font-medium);
   color: var(--accent-text);
 }
+
+/* ===================================================================
+   HOME — the daily snapshot
+   ===================================================================
+   An asymmetric but balanced grid, per the reference. On a phone it is
+   one column; from tablet up the cards take different widths according
+   to how much they matter, rather than five identical stacked boxes.
+   =================================================================== */
+
+.bm-home-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.bm-home-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+/* Small tracked label above each card, the one repeated device in this set. */
+.bm-eyebrow {
+  font-family: var(--font-medium);
+  font-size: var(--fs-caption);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin: 0 0 var(--space-3);
+}
+
+.bm-home-card-head .bm-eyebrow {
+  margin-bottom: 0;
+}
+
+.bm-home-quiet {
+  color: var(--text-secondary);
+  font-size: var(--fs-label);
+  margin: var(--space-2) 0 var(--space-4);
+}
+
+/* "3 of 5 done" — the progress ring's information without the dashboard. */
+.bm-home-progress-line {
+  font-family: var(--font-bold);
+  font-size: var(--fs-title);
+  letter-spacing: var(--tracking-title);
+  margin: var(--space-3) 0 var(--space-4);
+}
+
+.bm-home-progress-line span {
+  font-family: var(--font-regular);
+  font-size: var(--fs-body);
+  color: var(--text-secondary);
+  letter-spacing: 0;
+}
+
+.bm-home-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.bm-home-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.bm-home-row-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.bm-home-row-name {
+  display: block;
+  font-family: var(--font-medium);
+  font-size: var(--fs-body);
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bm-home-row-time {
+  display: block;
+  font-size: var(--fs-caption);
+  color: var(--text-secondary);
+}
+
+.bm-home-more {
+  margin: var(--space-3) 0 0;
+  font-size: var(--fs-caption);
+  color: var(--text-tertiary);
+}
+
+.bm-home-workout-name {
+  font-family: var(--font-bold);
+  font-size: var(--fs-heading);
+  letter-spacing: var(--tracking-title);
+  margin: 0;
+}
+
+.bm-home-workout-parts {
+  color: var(--text-secondary);
+  font-size: var(--fs-label);
+  margin: var(--space-2) 0 var(--space-4);
+}
+
+/* The one number on this screen. Deliberately the largest thing in the
+   card, because a figure you have to hunt for is a figure you ignore. */
+.bm-home-spent-value {
+  display: block;
+  font-family: var(--font-bold);
+  font-size: var(--fs-display);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-display);
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.bm-home-date {
+  display: block;
+  font-size: var(--fs-caption);
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+/* From tablet the grid opens and the cards stop being equals. Today's
+   schedule is the tallest thing on the screen, so it takes two rows and
+   the two smaller cards stack beside it. */
+@media (min-width: 700px) {
+  .bm-home-grid {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+
+  .bm-home-schedule {
+    grid-column: 1;
+    grid-row: span 2;
+  }
+
+  .bm-home-spent {
+    grid-column: 1 / -1;
+  }
+}
+
+/* On a laptop the rail already takes the left, so the content gets three
+   columns: the schedule tall on the left, the workout and Spent Today beside
+   it. Three cards, three different weights — not a row of equals. */
+@media (min-width: 1100px) {
+  .bm-home-grid {
+    grid-template-columns: 1.4fr 1fr 1fr;
+  }
+
+  .bm-home-schedule {
+    grid-column: 1;
+    grid-row: span 2;
+  }
+
+  .bm-home-workout {
+    grid-column: 2;
+  }
+
+  .bm-home-spent {
+    grid-column: 3;
+    grid-row: 1;
+  }
+}
