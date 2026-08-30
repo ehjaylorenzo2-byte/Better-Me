@@ -19,6 +19,8 @@ import { WorkoutDetailsPage } from '@/pages/gym/WorkoutDetailsPage'
 import { GymCalendarPage } from '@/pages/gym/GymCalendarPage'
 import { WorkoutSummaryPage } from '@/pages/gym/WorkoutSummaryPage'
 import { ShareWorkoutPage } from '@/pages/gym/ShareWorkoutPage'
+import { ProgramsPage } from '@/pages/gym/ProgramsPage'
+import { RoutineEditorPage } from '@/pages/gym/RoutineEditorPage'
 
 import { FinanceOverviewPage } from '@/pages/finance/FinanceOverviewPage'
 import { IncomePage } from '@/pages/finance/IncomePage'
@@ -98,6 +100,8 @@ function App() {
 
         <Route path="/gym" element={<WorkoutDetailsPage />} />
         <Route path="/gym/calendar" element={<GymCalendarPage />} />
+        <Route path="/gym/programs" element={<ProgramsPage />} />
+        <Route path="/gym/routines/:routineId" element={<RoutineEditorPage />} />
         <Route path="/gym/:date/summary" element={<WorkoutSummaryPage />} />
         <Route path="/gym/:date/share" element={<ShareWorkoutPage />} />
         <Route path="/gym/:date" element={<WorkoutDetailsPage />} />
