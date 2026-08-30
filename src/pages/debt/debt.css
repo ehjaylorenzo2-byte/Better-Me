@@ -17,3 +17,12 @@
   font-family: var(--font-bold);
   font-size: 22px;
 }
+
+/*
+  Deliberately separated from the payment history above it. A destructive
+  action sitting flush against a list is one mis-tap away from being pressed
+  by someone who meant to scroll.
+*/
+.bm-debt-delete {
+  margin-top: var(--space-8);
+}
