@@ -1,20 +1,32 @@
 /*
   Better Me design tokens. Do not hardcode colours elsewhere; reference these.
 
-  The palette is white, near black, and lime, copied from the fintech reference.
+  The palette is a soft neumorphic set sampled from the agreed reference: a
+  cool light ground, surfaces barely distinguishable from it, and depth carried
+  by a PAIR of shadows rather than by borders. Light falls from the top left.
 
-  One rule matters more than the rest: LIME IS A FILL, NEVER TEXT ON WHITE.
-  #D2F34C on #FFFFFF is about 1.4:1, which disappears outdoors. So lime is the
-  button, the chip, the active nav circle, the progress bar, and the text on top
-  of it is near black at roughly 15:1. When a green *word* is needed, use
-  --accent-text, which is dark enough to pass.
+  One rule matters more than the rest: THE ACCENT IS A FILL, NEVER TEXT.
+  This held when the accent was lime (#D2F34C on white is about 1.4:1) and it
+  still holds now it is blue (#4F93B8 on the ground is about 3.3:1). Both
+  disappear outdoors. The accent is the button, the chip, the active nav pill
+  and the progress bar, with near-white or near-black on top of it. When an
+  accent-coloured *word* is needed, use --accent-text, which is dark enough to
+  pass. A test in tests/contrast.test.ts fails the build on `color: var(--accent)`.
+
+  Switching the whole app back to lime is one attribute: <html data-accent="lime">.
 */
 
 :root {
-  /* Regular for reading, Medium for labels, Black for anything big. */
-  --font-regular: 'Creato Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-medium: 'Creato Display Medium', 'Creato Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-bold: 'Creato Display Black', 'Creato Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /*
+    Book for reading, Book for labels, Bold for anything big.
+
+    RT Rondelle is the face of the redesign; Creato stays in the stack behind it
+    so that if a Rondelle file ever fails to load the app falls back to the
+    typeface it was built in rather than to Arial.
+  */
+  --font-regular: 'RT Rondelle Book', 'RT Rondelle', 'Creato Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-medium: 'RT Rondelle Book', 'RT Rondelle', 'Creato Display Medium', 'Creato Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-bold: 'RT Rondelle Bold', 'RT Rondelle', 'Creato Display Black', 'Creato Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
   /* Type scale. Every screen gets exactly one --fs-display.
      Every size is derived from --fs-scale, so the Text Size setting moves the
@@ -44,9 +56,9 @@
   --tracking-display: -0.028em;
   --tracking-title: -0.02em;
 
-  --radius-sm: 12px;
+  --radius-sm: 14px;
   --radius-md: 18px;
-  --radius-lg: 24px;
+  --radius-lg: 26px;
   --radius-xl: 30px;
   --radius-pill: 999px;
 
@@ -86,86 +98,124 @@
 [data-theme='light'] {
   color-scheme: light;
 
-  --bg-primary: #F4F4F2;
-  --bg-secondary: #EAEAE6;
-  --surface: #FFFFFF;
-  --surface-elevated: #FFFFFF;
-  --surface-sunken: #F1F1EE;
+  /* Ground and surfaces sit within a few points of each other on purpose.
+     In this style the shadows do the separating, not the fills. */
+  --bg-primary: #EEEFF3;
+  --bg-secondary: #E7E9EE;
+  --surface: #EDEEF2;
+  --surface-elevated: #F3F4F8;
+  --surface-sunken: #E7E9EE;
 
-  --text-primary: #101208;
-  --text-secondary: #63675B;
-  /* Icons, chevrons and dividers only. Above the 3:1 bar for non-text, below
-     the 4.5:1 bar for body copy, so anything a person has to read uses
-     --text-secondary instead. */
-  --text-tertiary: #7C8074;
-  --text-on-accent: #101208;
+  /* The reference's own slate is #77859F, which measures about 3.2:1 on this
+     ground: fine for an icon, too weak for a word. Text steps darker through
+     the same hue until it passes, and the slate stays on meta and icons. */
+  --text-primary: #394152;
+  --text-secondary: #5A6579;
+  --text-tertiary: #77859F;
+  --text-on-accent: #FFFFFF;
 
-  --accent: #D2F34C;
-  --accent-contrast: #101208;
-  /* Lime is unreadable as text on white, so green words use this instead. */
-  --accent-text: #4C7A0B;
-  --accent-tint: #F0FBC9;
+  --accent: #4F93B8;
+  --accent-contrast: #FFFFFF;
+  /* Readable as a word on this ground, unlike --accent itself. */
+  --accent-text: #326A8B;
+  --accent-tint: #DCE9F1;
 
-  --success: #3F7A0B;
-  --warning: #9A6400;
-  --danger: #C0392F;
-  --danger-tint: #FBE9E7;
+  --success: #2F7D53;
+  --warning: #8A6100;
+  --danger: #B3402F;
+  --danger-tint: #F7E4E1;
 
-  --money-in-bg: #D2F34C;
-  --money-in-text: #101208;
-  --money-out-bg: #FBE9E7;
-  --money-out-text: #C0392F;
+  --money-in-bg: #4F93B8;
+  --money-in-text: #FFFFFF;
+  --money-out-bg: #F7E4E1;
+  --money-out-text: #B3402F;
 
-  --border: rgba(16, 18, 8, 0.09);
-  --border-strong: rgba(16, 18, 8, 0.18);
-  --overlay: rgba(16, 18, 8, 0.38);
+  --border: rgba(57, 65, 82, 0.08);
+  --border-strong: rgba(57, 65, 82, 0.16);
+  --overlay: rgba(30, 34, 44, 0.4);
 
-  --shadow-soft: 0 6px 20px rgba(16, 18, 8, 0.06);
-  --shadow-elevated: 0 14px 40px rgba(16, 18, 8, 0.1);
+  /* The two-shadow pair that defines the whole look. */
+  --sh-light: rgba(255, 255, 255, 0.95);
+  --sh-dark: rgba(163, 172, 190, 0.55);
+  --shadow-raise: 6px 6px 14px var(--sh-dark), -6px -6px 14px var(--sh-light);
+  --shadow-raise-sm: 3px 3px 7px var(--sh-dark), -3px -3px 7px var(--sh-light);
+  --shadow-press: inset 4px 4px 9px rgba(163, 172, 190, 0.6), inset -4px -4px 9px rgba(255, 255, 255, 0.9);
 
-  --gradient-brand: linear-gradient(160deg, #FFFFFF 0%, #F0FBC9 100%);
-  --gradient-accent: linear-gradient(135deg, #D2F34C 0%, #E4FA86 100%);
+  /* The old names still resolve, so every existing stylesheet picks up the new
+     depth without being touched. */
+  --shadow-soft: var(--shadow-raise-sm);
+  --shadow-elevated: var(--shadow-raise);
+
+  --gradient-brand: linear-gradient(160deg, #F3F4F8 0%, #E7E9EE 100%);
+  --gradient-accent: linear-gradient(135deg, #3C7CA0 0%, #66A7CF 100%);
 }
 
-/* Dark theme. Same lime, near black instead of white. */
 [data-theme='dark'] {
   color-scheme: dark;
 
-  --bg-primary: #0E100C;
-  --bg-secondary: #14170F;
-  --surface: #1A1D16;
-  --surface-elevated: #22261C;
-  --surface-sunken: #121409;
+  --bg-primary: #1E2027;
+  --bg-secondary: #191B21;
+  --surface: #23262E;
+  --surface-elevated: #2A2E37;
+  --surface-sunken: #191B21;
 
-  --text-primary: #F2F4EC;
-  --text-secondary: #9BA192;
-  /* Same role as in light: decoration, not reading. */
-  --text-tertiary: #7E8474;
-  --text-on-accent: #101208;
+  --text-primary: #E7EAF1;
+  --text-secondary: #AEB6C5;
+  --text-tertiary: #7F8899;
+  --text-on-accent: #10202B;
 
-  --accent: #D2F34C;
-  --accent-contrast: #101208;
-  /* On a dark surface lime is about 13:1, so it can be a word here. */
-  --accent-text: #D2F34C;
-  --accent-tint: rgba(210, 243, 76, 0.14);
+  --accent: #6FB2DC;
+  --accent-contrast: #10202B;
+  /* On a dark surface the accent is about 7:1, so here it can be a word. */
+  --accent-text: #8CC5E8;
+  --accent-tint: rgba(111, 178, 220, 0.15);
 
-  --success: #B8E84A;
+  --success: #7FCB9B;
   --warning: #F0B948;
-  --danger: #FF7A70;
-  --danger-tint: rgba(255, 122, 112, 0.14);
+  --danger: #FF8B82;
+  --danger-tint: rgba(255, 139, 130, 0.14);
 
-  --money-in-bg: #D2F34C;
-  --money-in-text: #101208;
-  --money-out-bg: rgba(255, 122, 112, 0.16);
+  --money-in-bg: #6FB2DC;
+  --money-in-text: #10202B;
+  --money-out-bg: rgba(255, 139, 130, 0.16);
   --money-out-text: #FF9A92;
 
-  --border: rgba(242, 244, 236, 0.1);
-  --border-strong: rgba(242, 244, 236, 0.2);
-  --overlay: rgba(4, 5, 2, 0.66);
+  --border: rgba(231, 234, 241, 0.1);
+  --border-strong: rgba(231, 234, 241, 0.2);
+  --overlay: rgba(8, 9, 12, 0.66);
 
-  --shadow-soft: 0 6px 20px rgba(0, 0, 0, 0.4);
-  --shadow-elevated: 0 14px 40px rgba(0, 0, 0, 0.55);
+  /* Neumorphism in the dark leans almost entirely on the shadow side; the
+     light edge is barely there, which is correct rather than a mistake. */
+  --sh-light: rgba(255, 255, 255, 0.05);
+  --sh-dark: rgba(0, 0, 0, 0.55);
+  --shadow-raise: 6px 6px 14px var(--sh-dark), -6px -6px 14px var(--sh-light);
+  --shadow-raise-sm: 3px 3px 7px var(--sh-dark), -3px -3px 7px var(--sh-light);
+  --shadow-press: inset 4px 4px 9px rgba(0, 0, 0, 0.6), inset -4px -4px 9px rgba(255, 255, 255, 0.055);
 
-  --gradient-brand: linear-gradient(160deg, #1A1D16 0%, #232A16 100%);
-  --gradient-accent: linear-gradient(135deg, #B8DC2F 0%, #D2F34C 100%);
+  --shadow-soft: var(--shadow-raise-sm);
+  --shadow-elevated: var(--shadow-raise);
+
+  --gradient-brand: linear-gradient(160deg, #23262E 0%, #191B21 100%);
+  --gradient-accent: linear-gradient(135deg, #4F93B8 0%, #8CC5E8 100%);
+}
+
+/*
+  Lime, kept whole and one attribute away. Setting data-accent="lime" on <html>
+  repoints every accent token; nothing else in the app needs to know.
+*/
+[data-accent='lime'] {
+  --accent: #D2F34C;
+  --accent-contrast: #23260F;
+  --accent-text: #55760C;
+  --accent-tint: #F0FBC9;
+  --text-on-accent: #23260F;
+  --money-in-bg: #D2F34C;
+  --money-in-text: #23260F;
+  --gradient-accent: linear-gradient(135deg, #C2E437 0%, #E2FA86 100%);
+}
+
+[data-theme='dark'][data-accent='lime'],
+[data-accent='lime'][data-theme='dark'] {
+  --accent-text: #D2F34C;
+  --accent-tint: rgba(210, 243, 76, 0.14);
 }
