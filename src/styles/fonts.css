@@ -1,14 +1,55 @@
 /*
-  Creato Display, self hosted.
+  RT Rondelle, self hosted, with Creato Display kept behind it as the fallback.
 
   Served from our own /fonts so the phone downloads it with the page. Nothing is
-  installed on the device and the service worker caches all three files, so the
-  app keeps its type offline.
+  installed on the device and the service worker caches every file, so the app
+  keeps its type offline.
 
-  Built by scripts/build-fonts.py, which also synthesises U+20B1 PESO SIGN. The
-  retail font does not include it, and a fallback peso next to Creato digits
+  Built by scripts/build-fonts.py, which also synthesises U+20B1 PESO SIGN.
+  Neither retail font includes it, and a fallback peso next to these digits
   looks like a rendering bug on the biggest number of every screen.
+
+  Rondelle ships in two weights, so the app's three roles map onto them:
+  Book carries reading and labels, Bold carries anything large.
 */
+
+@font-face {
+  font-family: 'RT Rondelle';
+  src: url('/fonts/RTRondelle-Book.woff2') format('woff2');
+  font-weight: 400 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'RT Rondelle';
+  src: url('/fonts/RTRondelle-Bold.woff2') format('woff2');
+  font-weight: 600 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/*
+  Weight-locked aliases, same reason as the Creato ones below: many rules set a
+  family without also setting a weight, and these answer any requested weight
+  with the one file rather than falling back a step.
+*/
+
+@font-face {
+  font-family: 'RT Rondelle Bold';
+  src: url('/fonts/RTRondelle-Bold.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'RT Rondelle Book';
+  src: url('/fonts/RTRondelle-Book.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
 
 @font-face {
   font-family: 'Creato Display';
