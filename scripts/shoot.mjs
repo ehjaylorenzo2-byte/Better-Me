@@ -117,7 +117,12 @@ const FIXTURES = {
     { id: 'ro1', user_id: USER, program_id: 'pr1', name: 'Push Day', routine_note: 'Increase weight once all sets hit 10.', archived: false, sort_order: 0, created_at: '' },
     { id: 'ro2', user_id: USER, program_id: 'pr1', name: 'Leg Day', routine_note: null, archived: false, sort_order: 1, created_at: '' },
   ],
-  routine_exercises: [],
+  /* Was empty, so the routine editor had nothing to photograph. */
+  routine_exercises: [
+    { id: 'rx1', user_id: USER, routine_id: 'ro1', name: 'Bench Press', measure: 'weight_reps', target_sets: 4, notes: null, sort_order: 0 },
+    { id: 'rx2', user_id: USER, routine_id: 'ro1', name: 'Overhead Press', measure: 'weight_reps', target_sets: 3, notes: null, sort_order: 1 },
+    { id: 'rx3', user_id: USER, routine_id: 'ro1', name: 'Plank', measure: 'duration', target_sets: null, notes: null, sort_order: 2 },
+  ],
   workout_sets: [
     { id: 'ws1', user_id: USER, workout_exercise_id: 'wex1', set_number: 1, weight_grams: 80000, reps: 10, duration_seconds: null, distance_metres: null, completed: true, created_at: '' },
     { id: 'ws2', user_id: USER, workout_exercise_id: 'wex1', set_number: 2, weight_grams: 80000, reps: 10, duration_seconds: null, distance_metres: null, completed: true, created_at: '' },
@@ -164,9 +169,31 @@ const FIXTURES = {
     },
   ],
   notification_preferences: [{ user_id: USER }],
-  habits: [],
-  habit_schedules: [],
-  habit_occurrences: [],
+  /*
+    These were empty, which meant every schedule surface — Home's Today card,
+    the Schedule screen, all three calendar views — rendered its empty state
+    and nothing else. A harness that only ever photographs empty states cannot
+    catch a layout bug in a full one.
+
+    Four To Dos: a daily one, a weekday one, a weekend one, and an archived one
+    that must appear only behind "Show archived".
+  */
+  habits: [
+    { id: 'h1', user_id: USER, name: 'Drink Water', description: '8 glasses', icon: 'droplet', category: 'general', archived: false, created_at: '' },
+    { id: 'h2', user_id: USER, name: 'Gym', description: null, icon: 'dumbbell', category: 'gym', archived: false, created_at: '' },
+    { id: 'h3', user_id: USER, name: 'Read 20 Pages', description: 'Before bed', icon: 'book', category: 'general', archived: false, created_at: '' },
+    { id: 'h4', user_id: USER, name: 'Old Morning Run', description: null, icon: 'star', category: 'general', archived: true, created_at: '' },
+  ],
+  habit_schedules: [
+    { id: 'hs1', habit_id: 'h1', user_id: USER, recurrence: 'daily', weekdays: null, time: '08:00', start_date: day(-60), end_date: null, reminder_enabled: true, supersedes_schedule_id: null, created_at: '' },
+    { id: 'hs2', habit_id: 'h2', user_id: USER, recurrence: 'weekly', weekdays: [1, 3, 5], time: '18:30', start_date: day(-60), end_date: null, reminder_enabled: true, supersedes_schedule_id: null, created_at: '' },
+    { id: 'hs3', habit_id: 'h3', user_id: USER, recurrence: 'weekly', weekdays: [0, 6], time: null, start_date: day(-60), end_date: null, reminder_enabled: false, supersedes_schedule_id: null, created_at: '' },
+    { id: 'hs4', habit_id: 'h4', user_id: USER, recurrence: 'daily', weekdays: null, time: '06:00', start_date: day(-90), end_date: null, reminder_enabled: false, supersedes_schedule_id: null, created_at: '' },
+  ],
+  /* One marked done today, so the progress bar is not sitting at zero. */
+  habit_occurrences: [
+    { id: 'ho1', habit_id: 'h1', schedule_id: 'hs1', user_id: USER, occurrence_date: day(0), scheduled_time: '08:00', status: 'done', completed_at: null, notes: null },
+  ],
   category_budgets: [],
 }
 
@@ -285,10 +312,13 @@ async function main() {
       ['add-transfer', '/finance/transfers/new'],
       ['savings-new', '/savings/new'],
       ['calendar', '/calendar'],
+      ['schedule', '/habits'],
       ['savings', '/savings'],
       ['savings-goal', '/savings/s1'],
       ['savings-goal-edit', '/savings/s2/edit'],
       ['gym-workout', '/gym'],
+      ['gym-programs', '/gym/programs'],
+      ['gym-routine', '/gym/routines/ro1'],
       ['gym-summary', `/gym/${day(0)}/summary`],
       ['gym-share', `/gym/${day(0)}/share`],
       ['profile', '/profile'],
@@ -315,6 +345,27 @@ async function main() {
       await page.waitForTimeout(900)
       await shoot(name, path.join(OUT, `${theme}-${name}.png`))
     }
+
+    /*
+      Week, Year and the To Dos tab are states rather than routes. Drive them
+      the way a person would, so a regression in any of the three shows up in
+      a picture instead of only in a type error.
+    */
+    await page.goto('http://localhost:4599/calendar', { waitUntil: 'networkidle' })
+    await page.waitForTimeout(700)
+    await page.getByRole('tab', { name: 'Week' }).click()
+    await page.waitForTimeout(700)
+    await shoot('calendar-week', path.join(OUT, `${theme}-calendar-week.png`))
+
+    await page.getByRole('tab', { name: 'Year' }).click()
+    await page.waitForTimeout(700)
+    await shoot('calendar-year', path.join(OUT, `${theme}-calendar-year.png`))
+
+    await page.goto('http://localhost:4599/habits', { waitUntil: 'networkidle' })
+    await page.waitForTimeout(700)
+    await page.getByRole('tab', { name: 'To Dos' }).click()
+    await page.waitForTimeout(500)
+    await shoot('schedule-todos', path.join(OUT, `${theme}-schedule-todos.png`))
 
     // The Add transaction sheet has no route of its own: it opens from the nav
     // plus while inside Finance. Drive it the way a person would.
