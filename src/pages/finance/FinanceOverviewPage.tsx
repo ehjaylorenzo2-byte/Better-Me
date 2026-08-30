@@ -20,7 +20,7 @@ import {
   calculateMoneyOut,
   calculateTotalDebt,
   calculateTotalSavings,
-  sumAccountBalances,
+  splitSpendable,
 } from '@/utils/calculations'
 import { getFinanceMotivationMessage } from '@/utils/motivation'
 import type {
@@ -102,8 +102,12 @@ export function FinanceOverviewPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, month, outlet?.savedAt])
 
-  // Every wallet counts towards the total, archived or not.
-  const totalBalance = useMemo(() => sumAccountBalances(accounts), [accounts])
+  /*
+    The headline answers "how much can I spend", so wallets marked as savings
+    are held back rather than counted. Archived wallets still count on both
+    sides: money in a wallet you stopped using is still money.
+  */
+  const { spendable, held } = useMemo(() => splitSpendable(accounts), [accounts])
   // The Wallets list itself still shows only the live ones.
   const liveAccounts = useMemo(() => accounts.filter((a) => !a.archived), [accounts])
   const moneyIn = useMemo(() => addCentavos(...income.map((i) => i.amount)), [income])
@@ -139,12 +143,19 @@ export function FinanceOverviewPage() {
   return (
     <div className="bm-finance-page bm-enter">
       <header className="bm-finance-head">
-        <p className="bm-finance-eyebrow">Total balance</p>
-        <h1 className="bm-display num">{formatCurrency(totalBalance)}</h1>
+        <p className="bm-finance-eyebrow">Available to spend</p>
+        <h1 className="bm-display num">{formatCurrency(spendable)}</h1>
         <p className="bm-finance-sub">
           {philippineMonthLabel(month)} · across {liveAccounts.length}{' '}
           {liveAccounts.length === 1 ? 'wallet' : 'wallets'}
         </p>
+        {/* Money held in savings wallets is still yours. Saying so stops the
+            lower headline reading as money that went missing. */}
+        {held !== 0 ? (
+          <p className="bm-finance-held num">
+            {formatCurrency(held)} held in savings
+          </p>
+        ) : null}
       </header>
 
       {/* ---- The four figures, in one block ----------------------------- */}
