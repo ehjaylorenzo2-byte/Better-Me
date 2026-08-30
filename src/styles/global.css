@@ -57,9 +57,21 @@ body {
   }
 }
 
+/*
+  Desktop.
+
+  From here the surface holds two things side by side — the nav rail and the
+  content — so --column has to cover both, not just the reading column. The
+  reading column itself stays around 700px; the extra width is the rail and
+  the gap, not longer lines of text.
+
+  This is the width the fixed shell buttons measure themselves against too, so
+  they land on the edge of the surface instead of the edge of the monitor.
+*/
 @media (min-width: 1024px) {
   :root {
-    --column: 680px;
+    --column: 1000px;
+    --rail: 208px;
   }
 
   #root {
@@ -67,11 +79,12 @@ body {
   }
 }
 
-/* Large monitors. Past this the column deliberately stops growing: a 1600px
-   line of text is unreadable, and the app is not trying to fill the screen. */
+/* Large monitors. Past this the reading column deliberately stops growing: a
+   1600px line of text is unreadable, and the app is not trying to fill the
+   screen. */
 @media (min-width: 1366px) {
   :root {
-    --column: 720px;
+    --column: 1060px;
   }
 }
 
@@ -139,6 +152,20 @@ a {
   gap: var(--space-2);
 }
 
+/*
+  On a wide screen the app is a centred surface, not the whole window, so a
+  button pinned to the window's right edge ends up marooned hundreds of pixels
+  away from the thing it acts on. Anchoring at the centre and pushing out by
+  half the surface width puts it back on the surface's own corner.
+*/
+@media (min-width: 1024px) {
+  .bm-shell-actions {
+    left: 50%;
+    right: auto;
+    transform: translateX(calc(var(--column) / 2 - 48px - var(--space-6)));
+  }
+}
+
 .app-scroll-area {
   padding-top: calc(var(--space-8) + var(--space-6) + var(--safe-top));
   padding-right: calc(18px + var(--safe-right));
@@ -159,12 +186,37 @@ a {
   }
 }
 
-/* Beyond a laptop the navigation is a rail on the left, so the page stops
-   reserving a strip at the bottom and reserves one at the side instead. */
+/*
+  Desktop: the shell becomes a grid and the nav takes the first column.
+
+  Previously the nav was still fixed to the viewport's left edge while the
+  content sat in a centred column, so on a wide monitor the rail floated far
+  out on its own with a dead 208px gutter inside the column where the padding
+  reserved room for a rail that was not there. Making it a real grid column
+  fixes both at once.
+
+  The nav is written into column 1 explicitly because it comes after the
+  content in the DOM — screen readers and tab order should reach the page
+  before the navigation, and that should not dictate which side it is drawn on.
+*/
 @media (min-width: 1024px) {
+  .bm-shell {
+    display: grid;
+    grid-template-columns: var(--rail) minmax(0, 1fr);
+    gap: var(--space-8);
+    align-items: start;
+    min-height: 100%;
+  }
+
   .app-scroll-area {
-    padding-left: calc(208px + var(--space-8) + var(--safe-left));
-    padding-bottom: calc(var(--space-8) + var(--safe-bottom));
+    grid-column: 2;
+    grid-row: 1;
+    /* The grid owns the left gap now. */
+    padding-left: 0;
+    padding-right: var(--space-6);
+    /* No bar at the bottom to clear, but the floating add button is still
+       there in the corner of the surface. */
+    padding-bottom: calc(var(--space-8) + 76px + var(--safe-bottom));
   }
 }
 
