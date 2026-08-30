@@ -252,7 +252,7 @@ export function SecuritySettingsPage() {
 
       <Modal open={deleteOpen} onClose={() => setDeleteOpen(false)} title="Delete your account?">
         <p className="bm-confirm-message">
-          Your habits, workouts, wallets, savings, debts and history all go, and so does your login.
+          Your To Dos, workouts, wallets, savings, debts and history all go, and so does your login.
           Type <strong>DELETE</strong> to confirm.
         </p>
         <Input
