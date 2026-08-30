@@ -16,9 +16,7 @@ import './profile.css'
  */
 const CARDS: Array<{ id: string; label: string; hint: string }> = [
   { id: 'motivation', label: 'Daily message', hint: 'The line under your name about how today is going.' },
-  { id: 'budget', label: 'Budget line', hint: 'How much you have left to spend, inside the progress card.' },
-  { id: 'quick', label: 'Quick actions', hint: 'The four shortcut buttons: habit, expense, transfer, gym.' },
-  { id: 'stats', label: 'Done, Skipped, Left, This week', hint: 'The row of four small numbers.' },
+  { id: 'budget', label: 'Spent today', hint: 'The single money figure on Home. Savings and debt are never shown here.' },
 ]
 
 export function HomeCardsSettingsPage() {
