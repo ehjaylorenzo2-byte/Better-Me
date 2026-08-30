@@ -284,6 +284,12 @@ export function WorkoutDetailsPage() {
         View Gym Calendar
       </button>
 
+      {/* The only way into the routine builder. Without this the programs
+          screen exists but nothing links to it. */}
+      <button className="bm-btn bm-btn-ghost bm-btn-full" onClick={() => navigate('/gym/programs')}>
+        Programs & Routines
+      </button>
+
       <RestTimer
         seconds={restSeconds}
         onDismiss={() => setRestSeconds(null)}
