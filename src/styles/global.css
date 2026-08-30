@@ -115,7 +115,9 @@ a {
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent);
+  /* Was the accent, which measures about 1.2:1 on the light ground — a focus
+     ring nobody could see. The text colour works in both themes. */
+  outline: 3px solid var(--text-primary);
   outline-offset: 2px;
   border-radius: 6px;
 }
@@ -124,10 +126,28 @@ a {
    Bottom padding clears the fixed nav AND the home indicator underneath it,
    which is why --safe-bottom is added rather than assumed to be zero. The side
    padding picks up the landscape notch inset for the same reason. */
+/*
+  The shell's Add and Settings buttons sit fixed at the top right, so every
+  screen reserves a band for them rather than sliding underneath.
+*/
+.bm-shell-actions {
+  position: fixed;
+  top: calc(var(--safe-top) + var(--space-3));
+  right: calc(var(--safe-right) + var(--space-4));
+  z-index: 520;
+  display: flex;
+  gap: var(--space-2);
+}
+
 .app-scroll-area {
-  padding-top: calc(var(--space-6) + var(--safe-top));
+  padding-top: calc(var(--space-8) + var(--space-6) + var(--safe-top));
   padding-right: calc(18px + var(--safe-right));
-  padding-bottom: calc(var(--nav-height) + var(--safe-bottom) + var(--space-8));
+  /* The nav pill, plus the floating add button sitting above it, plus a
+     breath. Without the extra 76px the last card on a long screen finishes
+     underneath the button. */
+  padding-bottom: calc(var(--nav-height) + 76px + var(--safe-bottom) + var(--space-6));
+  /* On a wide screen the nav becomes a left rail, so the bottom gap is no
+     longer needed and the left one is. Set below. */
   padding-left: calc(18px + var(--safe-left));
   min-height: 100%;
 }
@@ -136,6 +156,15 @@ a {
   .app-scroll-area {
     padding-right: calc(var(--space-6) + var(--safe-right));
     padding-left: calc(var(--space-6) + var(--safe-left));
+  }
+}
+
+/* Beyond a laptop the navigation is a rail on the left, so the page stops
+   reserving a strip at the bottom and reserves one at the side instead. */
+@media (min-width: 1024px) {
+  .app-scroll-area {
+    padding-left: calc(208px + var(--space-8) + var(--safe-left));
+    padding-bottom: calc(var(--space-8) + var(--safe-bottom));
   }
 }
 
