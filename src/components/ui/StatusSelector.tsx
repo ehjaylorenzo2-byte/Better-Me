@@ -18,7 +18,7 @@ export function StatusSelector({
   disabled?: boolean
 }) {
   return (
-    <div className="bm-status-selector" role="group" aria-label="Habit status">
+    <div className="bm-status-selector" role="group" aria-label="Status">
       {OPTIONS.map((opt) => (
         <button
           key={opt.value}
