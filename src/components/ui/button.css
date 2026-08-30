@@ -1,24 +1,40 @@
+/*
+  Buttons are raised objects that depress when pressed.
+
+  The press is the whole idea: on :active the pair of shadows inverts, so the
+  control physically sinks under the finger instead of merely dimming. That is
+  the one piece of feedback this style gives for free, and it is worth keeping
+  even where the rest is restrained.
+
+  Minimum height is 48px. Controls in this app ranged from 40 to 52; the brief
+  asks for roughly 44 everywhere, and 48 leaves headroom.
+*/
+
 .bm-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--space-2);
   font-family: var(--font-medium);
   font-size: 15px;
-  padding: 15px 22px;
+  padding: 0 var(--space-6);
   border-radius: var(--radius-pill);
-  border: 1px solid transparent;
-  transition: transform 120ms ease, opacity 120ms ease, background 180ms ease;
-  min-height: 52px;
+  border: 0;
+  min-height: 48px;
+  background: var(--surface);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-raise-sm);
+  transition: box-shadow 140ms ease, opacity 140ms ease, background 180ms ease;
 }
 
 .bm-btn:active:not(:disabled) {
-  transform: scale(0.98);
+  box-shadow: var(--shadow-press);
 }
 
 .bm-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  box-shadow: var(--shadow-press);
 }
 
 .bm-btn-full {
@@ -26,14 +42,14 @@
 }
 
 /*
-  Near black with a white label, the way the reference does its primary action.
-  Lime is saved for the accents around it: a solid lime button with dark text
-  works, but used for every primary action it stops reading as an accent at all.
+  The primary action carries the accent as a fill. The previous version used
+  near-black for primary and saved the accent for decoration, which in this
+  lighter palette made every screen's main action look like a cancel button.
 */
 .bm-btn-primary {
-  background: var(--text-primary);
-  color: var(--bg-primary);
-  box-shadow: var(--shadow-soft);
+  background: var(--gradient-accent);
+  color: var(--text-on-accent);
+  box-shadow: var(--shadow-raise-sm);
 }
 
 .bm-btn-accent {
@@ -41,21 +57,29 @@
   color: var(--accent-contrast);
 }
 
+/* Secondary is the same raised surface as the default above. The class stays so
+   existing markup keeps working unchanged. */
 .bm-btn-secondary {
   background: var(--surface);
   color: var(--text-primary);
-  border-color: var(--border-strong);
 }
 
+/* Ghost sits flat until touched, which is what makes it read as the lesser
+   action beside a raised one. */
 .bm-btn-ghost {
   background: transparent;
   color: var(--accent-text);
+  box-shadow: none;
+}
+
+.bm-btn-ghost:active:not(:disabled) {
+  box-shadow: var(--shadow-press);
 }
 
 .bm-btn-danger {
-  background: transparent;
+  background: var(--surface);
   color: var(--danger);
-  border-color: var(--danger);
+  box-shadow: var(--shadow-raise-sm);
 }
 
 .bm-btn-spinner {
@@ -70,5 +94,40 @@
 @keyframes bm-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/*
+  The shell's circular icon button — Add and Settings in the header.
+  Deliberately not called .bm-icon-btn: Finance already owns that name for a
+  42px variant, and the collision test exists to stop two files fighting over
+  one class.
+*/
+.bm-shell-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-secondary);
+  box-shadow: var(--shadow-raise-sm);
+  transition: box-shadow 140ms ease;
+}
+
+.bm-shell-btn:active:not(:disabled) {
+  box-shadow: var(--shadow-press);
+  color: var(--text-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bm-btn,
+  .bm-shell-btn {
+    transition: none;
+  }
+  .bm-btn-spinner {
+    animation-duration: 1600ms;
   }
 }
