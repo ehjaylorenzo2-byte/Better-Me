@@ -700,6 +700,12 @@ export interface Database {
       reset_everything: { Args: Record<string, never>; Returns: undefined }
       /** Removes the login itself, which cascades to everything else. */
       delete_my_account: { Args: Record<string, never>; Returns: undefined }
+      /**
+       * Deletes a debt while keeping the money spent on it spent: every
+       * payment becomes an ordinary expense first, so wallet balances and the
+       * month's Money out do not rebound when the debt disappears.
+       */
+      delete_debt_keep_spending: { Args: { p_debt_id: string }; Returns: undefined }
     }
     Enums: Record<string, never>
   }
