@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   calculateDoneRate,
+  splitSpendable,
+  sumAccountBalances,
   calculateSkippedCancelledRate,
   calculateDailyProgress,
   calculateBudgetRemaining,
@@ -117,5 +119,42 @@ describe('debt', () => {
   it('marks a debt paid off exactly at zero balance', () => {
     expect(isDebtPaidOff(0)).toBe(true)
     expect(isDebtPaidOff(1)).toBe(false)
+  })
+})
+
+/*
+  Total balance answers "how much can I spend", so a savings wallet must not
+  inflate it. These pin the split down because the alternative — noticing the
+  headline is wrong — only happens when you have already overspent.
+*/
+describe('splitSpendable', () => {
+  const w = (balance: number, flow: 'outgoing' | 'savings' | 'both') => ({ balance, flow })
+
+  it('holds back savings wallets and keeps the rest spendable', () => {
+    const { spendable, held } = splitSpendable([
+      w(604100, 'both'),
+      w(3700000, 'savings'),
+      w(-18500, 'outgoing'),
+    ])
+    expect(spendable).toBe(585600)
+    expect(held).toBe(3700000)
+  })
+
+  it('treats a both-flow wallet as spendable, not as savings', () => {
+    expect(splitSpendable([w(1000, 'both')])).toEqual({ spendable: 1000, held: 0 })
+  })
+
+  it('keeps the two halves adding up to the old total', () => {
+    const wallets = [w(500, 'both'), w(250, 'savings'), w(-75, 'outgoing')]
+    const { spendable, held } = splitSpendable(wallets)
+    expect(spendable + held).toBe(sumAccountBalances(wallets))
+  })
+
+  it('carries a negative savings wallet into held rather than silently dropping it', () => {
+    expect(splitSpendable([w(-400, 'savings')])).toEqual({ spendable: 0, held: -400 })
+  })
+
+  it('returns zeroes for no wallets', () => {
+    expect(splitSpendable([])).toEqual({ spendable: 0, held: 0 })
   })
 })
