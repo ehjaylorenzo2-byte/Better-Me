@@ -48,7 +48,7 @@ export function HabitDetailsPage() {
       setSchedule(schedules[schedules.length - 1] ?? null)
       setHistory(hist)
     } catch {
-      setError('Could not load this habit.')
+      setError('Could not load this To Do.')
     } finally {
       setLoading(false)
     }
@@ -72,7 +72,7 @@ export function HabitDetailsPage() {
   const onStatusChange = async (status: HabitStatus | null) => {
     if (!habit || !schedule) return
     if (!scheduledToday) {
-      show('This habit is not scheduled today.', 'error')
+      show('This To Do is not scheduled today.', 'error')
       return
     }
     try {
@@ -87,12 +87,12 @@ export function HabitDetailsPage() {
   const onArchive = async () => {
     if (!habit) return
     await archiveHabit(habit.id)
-    show('Habit archived.', 'success')
+    show('To Do archived.', 'success')
     navigate('/habits')
   }
 
   if (loading) return <LoadingState />
-  if (error || !habit) return <ErrorState message={error ?? 'Habit not found.'} onRetry={load} />
+  if (error || !habit) return <ErrorState message={error ?? 'To Do not found.'} onRetry={load} />
 
   const doneRate = calculateDoneRate(weekStats)
 
@@ -176,8 +176,8 @@ export function HabitDetailsPage() {
 
       <ConfirmDialog
         open={confirmArchive}
-        title="Archive this habit?"
-        message="Archived habits stop generating new schedule items, but history is kept."
+        title="Archive this To Do?"
+        message="Archived To Dos stop generating new schedule items, but history is kept."
         confirmLabel="Archive"
         danger
         onConfirm={onArchive}
