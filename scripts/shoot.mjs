@@ -314,6 +314,8 @@ async function main() {
       ['calendar', '/calendar'],
       ['schedule', '/habits'],
       ['savings', '/savings'],
+      ['debt', '/debt'],
+      ['debt-details', '/debt/d1'],
       ['savings-goal', '/savings/s1'],
       ['savings-goal-edit', '/savings/s2/edit'],
       ['gym-workout', '/gym'],
@@ -366,6 +368,19 @@ async function main() {
     await page.getByRole('tab', { name: 'To Dos' }).click()
     await page.waitForTimeout(500)
     await shoot('schedule-todos', path.join(OUT, `${theme}-schedule-todos.png`))
+
+    /*
+      The delete confirmation on a debt. It warns that payment history goes
+      with it, and that warning is the whole point of the control — worth a
+      picture so a future edit cannot quietly drop it.
+    */
+    await page.goto('http://localhost:4599/debt/d1', { waitUntil: 'networkidle' })
+    await page.waitForTimeout(700)
+    await page.getByRole('button', { name: 'Delete this debt' }).click()
+    await page.waitForTimeout(500)
+    await shoot('debt-delete-confirm', path.join(OUT, `${theme}-debt-delete-confirm.png`))
+    await page.getByRole('button', { name: 'Cancel' }).click()
+    await page.waitForTimeout(300)
 
     // The Add transaction sheet has no route of its own: it opens from the nav
     // plus while inside Finance. Drive it the way a person would.
