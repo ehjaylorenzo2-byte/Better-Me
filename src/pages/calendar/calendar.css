@@ -228,3 +228,207 @@
   color: var(--text-primary);
   font-size: 18px;
 }
+
+/*
+  Week / Month / Year.
+
+  The switcher is a recessed track with a raised pill on the selection, which
+  is the same "pressed groove holding a raised object" idea the nav uses. It
+  keeps the selection legible by depth as well as by colour.
+*/
+.bm-cal-views {
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  box-shadow: var(--shadow-press);
+  margin-bottom: var(--space-4);
+}
+
+.bm-cal-view-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  border-radius: var(--radius-pill);
+  min-height: 44px;
+  font-family: var(--font-medium);
+  font-size: 13px;
+  color: var(--text-secondary);
+  transition: box-shadow 160ms ease, color 160ms ease;
+}
+
+.bm-cal-view-btn.active {
+  background: var(--surface);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-raise-sm);
+}
+
+/* ---- Week: an agenda of seven rows ---- */
+
+.bm-cal-week {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.bm-cal-week-day {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  width: 100%;
+  text-align: left;
+  border: 0;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-raise-sm);
+  min-height: 64px;
+}
+
+.bm-cal-week-day:active {
+  box-shadow: var(--shadow-press);
+}
+
+/* Today is marked by depth and an accent number, never by colour alone. */
+.bm-cal-week-day.today .bm-cal-week-num {
+  color: var(--accent-text);
+}
+
+.bm-cal-week-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  width: 34px;
+}
+
+.bm-cal-week-dow {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+}
+
+.bm-cal-week-num {
+  font-family: var(--font-bold);
+  font-size: 18px;
+  color: var(--text-primary);
+}
+
+.bm-cal-week-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  /* Long names ellipse instead of widening the row past its card. */
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.bm-cal-week-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.bm-cal-week-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bm-cal-week-time {
+  flex: none;
+  margin-left: auto;
+  padding-left: var(--space-2);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.bm-cal-week-empty {
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+}
+
+/* ---- Year: twelve months, shaded by how full each one is ---- */
+
+.bm-cal-year-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+}
+
+@media (min-width: 700px) {
+  .bm-cal-year-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.bm-cal-year-month {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+  border: 0;
+  padding: var(--space-4);
+  min-height: 84px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-raise-sm);
+}
+
+.bm-cal-year-month:active {
+  box-shadow: var(--shadow-press);
+}
+
+/*
+  The shading is a separate layer behind the text rather than a background on
+  the button, so its opacity never drags the label's contrast down with it.
+*/
+.bm-cal-year-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--gradient-accent);
+  pointer-events: none;
+}
+
+.bm-cal-year-label,
+.bm-cal-year-count {
+  position: relative;
+  z-index: 1;
+}
+
+.bm-cal-year-label {
+  font-family: var(--font-medium);
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.bm-cal-year-count {
+  font-family: var(--font-bold);
+  font-size: 20px;
+  color: var(--text-primary);
+}
+
+.bm-cal-year-month.today {
+  box-shadow: var(--shadow-raise), inset 0 0 0 2px var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bm-cal-view-btn {
+    transition: none;
+  }
+}
+
+/* "Aug 30 – Sep 5" is far longer than "August" and wraps at phone width. */
+.bm-cal-title-week {
+  font-size: 26px;
+  line-height: 1.15;
+}
