@@ -63,7 +63,12 @@ export function AppLayout() {
   }
 
   return (
-    <div>
+    /*
+      A plain block on a phone; a two-column grid on a desktop, where the nav
+      becomes a real column beside the content instead of a bar floating over
+      it and the content stops sitting in a phone-width strip.
+    */
+    <div className="bm-shell">
       <div className="bm-shell-actions">
         <button
           type="button"
