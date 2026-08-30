@@ -10,30 +10,42 @@
   font-family: var(--font-medium);
 }
 
+/*
+  Fields are the one thing in this style that is recessed rather than raised —
+  a hollow you type into. The border is gone, because an outline plus an inset
+  shadow reads as two edges.
+*/
 .bm-input {
   width: 100%;
   background: var(--surface);
-  border: 1.5px solid var(--border);
+  border: 0;
   border-radius: var(--radius-md);
-  padding: 15px 16px;
+  padding: 0 var(--space-4);
   /* 16px minimum, otherwise iOS Safari zooms the whole page on focus. */
   font-size: 16px;
   color: var(--text-primary);
   min-height: 52px;
-  transition: border-color 150ms ease;
+  box-shadow: var(--shadow-press);
+  transition: box-shadow 150ms ease;
 }
 
 .bm-input::placeholder {
   color: var(--text-tertiary);
 }
 
-.bm-input:focus {
-  outline: none;
-  border-color: var(--text-primary);
+/*
+  Focus used to remove the outline and replace it with a border colour, which
+  is exactly the pattern the accessibility pass is meant to remove. The ring is
+  now a real outline in the text colour, so it is visible in both themes rather
+  than being an accent that vanishes on light.
+*/
+.bm-input:focus-visible {
+  outline: 3px solid var(--text-primary);
+  outline-offset: 2px;
 }
 
 .bm-input-error {
-  border-color: var(--danger);
+  box-shadow: var(--shadow-press), 0 0 0 2px var(--danger);
 }
 
 .bm-field-error {
@@ -50,7 +62,9 @@
 
 .bm-input-toggle {
   position: absolute;
-  right: 12px;
+  right: var(--space-3);
+  min-height: 44px;
+  min-width: 44px;
   background: none;
   border: none;
   color: var(--accent-text);
